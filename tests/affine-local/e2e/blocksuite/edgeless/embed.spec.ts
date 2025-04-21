@@ -27,15 +27,12 @@ test('should close embed editing modal when editor switching to page mode by sho
   page,
 }) => {
   await page.keyboard.press('@');
-  await page
-    .getByTestId('cmdk-label')
-    .getByText('Write, Draw, Plan all at Once.')
-    .click();
+  await page.getByTestId('cmdk-label').getByText('Getting Started').click();
   const toolbar = locateToolbar(page);
   await toolbar.getByLabel('Edit').click();
 
   const editingModal = page.locator('embed-card-edit-modal');
-  expect(editingModal).toBeVisible();
+  await expect(editingModal).toBeVisible();
 
   await page.keyboard.press('Alt+s');
   await waitForEditorLoad(page);

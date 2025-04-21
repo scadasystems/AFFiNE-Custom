@@ -6,9 +6,13 @@ import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { AIButtonProvider } from '@affine/core/modules/ai-button';
 import {
+  AuthProvider,
   AuthService,
   DefaultServerService,
+  ServerScope,
+  ServerService,
   ServersService,
+  ValidatorProvider,
 } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
@@ -26,7 +30,7 @@ import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspac
 import { getWorkerUrl } from '@affine/env/worker';
 import { I18n } from '@affine/i18n';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
-import { MarkdownAdapterExtension } from '@blocksuite/affine/adapters';
+import { getMarkdownAdapterExtensions } from '@blocksuite/affine/adapters';
 import { Container } from '@blocksuite/affine/global/di';
 import {
   docLinkBaseURLMiddleware,
@@ -40,16 +44,19 @@ import { EdgeToEdge } from '@capawesome/capacitor-android-edge-to-edge-support';
 import { InAppBrowser } from '@capgo/inappbrowser';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
+import { AsyncCall } from 'async-call-rpc';
 import { useTheme } from 'next-themes';
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { AffineTheme } from './plugins/affine-theme';
 import { AIButton } from './plugins/ai-button';
+import { Auth } from './plugins/auth';
+import { HashCash } from './plugins/hashcash';
+import { NbStoreNativeDBApis } from './plugins/nbstore';
+import { writeEndpointToken } from './proxy';
 
-const storeManagerClient = new StoreManagerClient(
-  new OpClient(new Worker(getWorkerUrl('nbstore.worker.js')))
-);
+const storeManagerClient = createStoreManagerClient();
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
@@ -137,6 +144,13 @@ framework.impl(VirtualKeyboardProvider, {
   },
 });
 
+framework.impl(ValidatorProvider, {
+  async validate(_challenge, resource) {
+    const res = await HashCash.hash({ challenge: resource });
+    return res.value;
+  },
+});
+
 framework.impl(AIButtonProvider, {
   presentAIButton: () => {
     return AIButton.present();
@@ -144,6 +158,44 @@ framework.impl(AIButtonProvider, {
   dismissAIButton: () => {
     return AIButton.dismiss();
   },
+});
+
+framework.scope(ServerScope).override(AuthProvider, resolver => {
+  const serverService = resolver.get(ServerService);
+  const endpoint = serverService.server.baseUrl;
+  return {
+    async signInMagicLink(email, linkToken, clientNonce) {
+      const { token } = await Auth.signInMagicLink({
+        endpoint,
+        email,
+        token: linkToken,
+        clientNonce,
+      });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signInOauth(code, state, _provider, clientNonce) {
+      const { token } = await Auth.signInOauth({
+        endpoint,
+        code,
+        state,
+        clientNonce,
+      });
+      await writeEndpointToken(endpoint, token);
+      return {};
+    },
+    async signInPassword(credential) {
+      const { token } = await Auth.signInPassword({
+        endpoint,
+        ...credential,
+      });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signOut() {
+      await Auth.signOut({
+        endpoint,
+      });
+    },
+  };
 });
 
 // ------ some apis for native ------
@@ -199,7 +251,7 @@ framework.impl(AIButtonProvider, {
     const snapshot = transformer.docToSnapshot(blockSuiteDoc);
 
     const container = new Container();
-    [...MarkdownAdapterExtension].forEach(ext => {
+    getMarkdownAdapterExtensions().forEach(ext => {
       ext.setup(container);
     });
     const provider = container.provider();
@@ -301,4 +353,36 @@ export function App() {
       </FrameworkRoot>
     </Suspense>
   );
+}
+
+function createStoreManagerClient() {
+  const worker = new Worker(getWorkerUrl('nbstore'));
+  const { port1: nativeDBApiChannelServer, port2: nativeDBApiChannelClient } =
+    new MessageChannel();
+  AsyncCall<typeof NbStoreNativeDBApis>(NbStoreNativeDBApis, {
+    channel: {
+      on(listener) {
+        const f = (e: MessageEvent<any>) => {
+          listener(e.data);
+        };
+        nativeDBApiChannelServer.addEventListener('message', f);
+        return () => {
+          nativeDBApiChannelServer.removeEventListener('message', f);
+        };
+      },
+      send(data) {
+        nativeDBApiChannelServer.postMessage(data);
+      },
+    },
+    log: false,
+  });
+  nativeDBApiChannelServer.start();
+  worker.postMessage(
+    {
+      type: 'native-db-api-channel',
+      port: nativeDBApiChannelClient,
+    },
+    [nativeDBApiChannelClient]
+  );
+  return new StoreManagerClient(new OpClient(worker));
 }

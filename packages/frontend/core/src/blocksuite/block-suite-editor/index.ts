@@ -10,4 +10,3 @@ registerAIEffects();
 registerTemplates();
 
 export * from './blocksuite-editor';
-export * from './blocksuite-editor-container';

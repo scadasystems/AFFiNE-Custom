@@ -6,8 +6,9 @@ import {
   segmentSentences,
 } from '@blocksuite/affine-gfx-turbo-renderer';
 import type { Container } from '@blocksuite/global/di';
-import type { GfxBlockComponent } from '@blocksuite/std';
-import { clientToModelCoord } from '@blocksuite/std/gfx';
+import type { EditorHost, GfxBlockComponent } from '@blocksuite/std';
+import { clientToModelCoord, type ViewportRecord } from '@blocksuite/std/gfx';
+import type { BlockModel } from '@blocksuite/store';
 
 import type { ListLayout } from './list-painter.worker';
 
@@ -21,24 +22,27 @@ export class ListLayoutHandlerExtension extends BlockLayoutHandlerExtension<List
     );
   }
 
-  queryLayout(component: GfxBlockComponent): ListLayout | null {
-    // Select all list items within this list block
+  override queryLayout(
+    model: BlockModel,
+    host: EditorHost,
+    viewportRecord: ViewportRecord
+  ): ListLayout | null {
+    const component = host.std.view.getBlock(model.id) as GfxBlockComponent;
+    if (!component) return null;
+
+    // Find the list items within this specific list component
     const listItemSelector =
       '.affine-list-block-container .affine-list-rich-text-wrapper [data-v-text="true"]';
     const listItemNodes = component.querySelectorAll(listItemSelector);
 
     if (listItemNodes.length === 0) return null;
 
-    const viewportRecord = component.gfx.viewport.deserializeRecord(
-      component.dataset.viewportState
-    );
-
-    if (!viewportRecord) return null;
-
     const { zoom, viewScale } = viewportRecord;
     const list: ListLayout = {
       type: 'affine:list',
       items: [],
+      blockId: model.id,
+      rect: { x: 0, y: 0, w: 0, h: 0 },
     };
 
     listItemNodes.forEach(listItemNode => {

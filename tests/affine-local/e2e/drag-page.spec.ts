@@ -1,9 +1,15 @@
 import { test } from '@affine-test/kit/playwright';
+import {
+  clickEdgelessModeButton,
+  locateToolbar,
+} from '@affine-test/kit/utils/editor';
+import { pressBackspace, pressEnter } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   createLinkedPage,
   dragTo,
+  type,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
@@ -293,7 +299,7 @@ test('drag a page card block to another page', async ({ page }) => {
   );
 });
 
-test('drag a favourite page into blocksuite', async ({ page }) => {
+test('drag a favourite page into note on page mode', async ({ page }) => {
   await clickNewPageButton(page, 'hi from page');
   await page.getByTestId('pin-button').click();
   const pageId = getCurrentDocIdFromUrl(page);
@@ -312,4 +318,94 @@ test('drag a favourite page into blocksuite', async ({ page }) => {
   await expect(page.locator('affine-embed-linked-doc-block')).toContainText(
     'hi from page'
   );
+});
+
+test('drag a favourite page into canvas on edgeless mode', async ({ page }) => {
+  await clickNewPageButton(page, 'hi from page');
+  await pressEnter(page);
+  await type(page, 'Hello world');
+  await page.getByTestId('pin-button').click();
+  const pageId = getCurrentDocIdFromUrl(page);
+  const item = page
+    .getByTestId(`explorer-favorites`)
+    .locator(`[data-testid="explorer-doc-${pageId}"]`);
+  await expect(item).toBeVisible();
+
+  await clickNewPageButton(page, 'edgeless page');
+  await clickEdgelessModeButton(page);
+
+  // drag item into blocksuite editor
+  await dragTo(page, item, page.locator('affine-edgeless-root').first());
+
+  const embedDoc = page.locator('affine-embed-edgeless-synced-doc-block');
+  await expect(embedDoc).toContainText('Hello world');
+  await embedDoc.click();
+
+  const toolbar = locateToolbar(page);
+  const switchViewButton = toolbar.getByLabel('Switch view');
+  await switchViewButton.click();
+  await toolbar.getByLabel('Card view').click(); // this will record the view as preferred view
+  const cardDoc = page.locator('affine-embed-edgeless-linked-doc-block');
+  await expect(embedDoc).toBeHidden();
+  await expect(cardDoc).toBeVisible();
+
+  await pressBackspace(page);
+  await expect(embedDoc).toBeHidden();
+  await expect(cardDoc).toBeHidden();
+
+  await dragTo(page, item, page.locator('affine-edgeless-root').first());
+  await expect(cardDoc).toBeVisible();
+  await expect(embedDoc).toBeHidden();
+
+  await page.reload();
+  await cardDoc.click();
+  await pressBackspace(page);
+
+  await dragTo(page, item, page.locator('affine-edgeless-root').first());
+  await expect(cardDoc, 'prefer view should be persistence').toBeVisible();
+  await expect(embedDoc).toBeHidden();
+});
+
+test('drag a favourite page into note on edgeless mode', async ({ page }) => {
+  await clickNewPageButton(page, 'hi from page');
+  await pressEnter(page);
+  await type(page, 'Hello world');
+  await page.getByTestId('pin-button').click();
+  const pageId = getCurrentDocIdFromUrl(page);
+  const item = page
+    .getByTestId(`explorer-favorites`)
+    .locator(`[data-testid="explorer-doc-${pageId}"]`);
+  await expect(item).toBeVisible();
+
+  await clickNewPageButton(page, 'edgeless page');
+  await clickEdgelessModeButton(page);
+
+  const edgelessNote = page.locator('affine-edgeless-note');
+  await dragTo(page, item, edgelessNote);
+
+  const embedDocInNote = edgelessNote.locator('affine-embed-synced-doc-block');
+  const cardDocInNote = edgelessNote.locator('affine-embed-linked-doc-block');
+
+  await expect(embedDocInNote).toBeHidden();
+  await expect(cardDocInNote).toBeVisible();
+
+  await edgelessNote.click({ delay: 100 });
+  await edgelessNote.click({ delay: 100 });
+  await cardDocInNote.click();
+
+  const toolbar = locateToolbar(page);
+  const switchViewButton = toolbar.getByLabel('Switch view');
+  await switchViewButton.click();
+  await toolbar.getByLabel('Embed view').click(); // this should not record the view as preferred view
+  await expect(embedDocInNote).toBeVisible();
+  await expect(cardDocInNote).toBeHidden();
+
+  await pressBackspace(page);
+
+  await dragTo(page, item, edgelessNote);
+  await expect(
+    embedDocInNote,
+    'prefer view should only be available in canvas'
+  ).toBeHidden();
+  await expect(cardDocInNote).toBeVisible();
 });

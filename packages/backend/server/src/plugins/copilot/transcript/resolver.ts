@@ -14,6 +14,7 @@ import { AiJobStatus } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import {
+  CopilotTranscriptionAudioNotProvided,
   CopilotTranscriptionJobNotFound,
   type FileUpload,
 } from '../../../base';
@@ -100,20 +101,27 @@ export class CopilotTranscriptionResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('blobId') blobId: string,
-    @Args({ name: 'blob', type: () => GraphQLUpload })
-    blob: FileUpload
+    @Args({ name: 'blob', type: () => GraphQLUpload, nullable: true })
+    blob: FileUpload | null,
+    @Args({ name: 'blobs', type: () => [GraphQLUpload], nullable: true })
+    blobs: FileUpload[] | null
   ): Promise<TranscriptionResultType | null> {
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
       .allowLocal()
       .assert('Workspace.Copilot');
+    // merge blobs
+    const allBlobs = blob ? [blob, ...(blobs || [])].filter(v => !!v) : blobs;
+    if (!allBlobs || allBlobs.length === 0) {
+      throw new CopilotTranscriptionAudioNotProvided();
+    }
 
     const jobResult = await this.service.submitTranscriptionJob(
       user.id,
       workspaceId,
       blobId,
-      blob
+      await Promise.all(allBlobs)
     );
 
     return this.handleJobResult(jobResult);
@@ -136,14 +144,13 @@ export class CopilotTranscriptionResolver {
       workspaceId,
       jobId
     );
-    if (!job || !job.url || !job.mimeType) {
+    if (!job || !job.infos) {
       throw new CopilotTranscriptionJobNotFound();
     }
 
     const jobResult = await this.service.executeTranscriptionJob(
       job.id,
-      job.url,
-      job.mimeType
+      job.infos
     );
 
     return this.handleJobResult(jobResult);

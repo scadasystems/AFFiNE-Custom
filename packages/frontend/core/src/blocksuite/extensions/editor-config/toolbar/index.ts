@@ -29,6 +29,7 @@ import {
 import { isPeekable, peek } from '@blocksuite/affine/components/peek';
 import { toast } from '@blocksuite/affine/components/toast';
 import {
+  EditorChevronDown,
   type MenuContext,
   type MenuItemGroup,
 } from '@blocksuite/affine/components/toolbar';
@@ -72,7 +73,6 @@ import {
 } from '@blocksuite/affine/std/gfx';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import {
-  ArrowDownSmallIcon,
   CopyAsImgaeIcon,
   CopyIcon,
   EditIcon,
@@ -88,7 +88,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { openDocActions } from '../../open-doc';
-import { createCopyAsPngMenuItem } from './copy-as-image';
+import { copyAsImage, createCopyAsPngMenuItem } from './copy-as-image';
 
 export function createToolbarMoreMenuConfig(framework: FrameworkProvider) {
   return {
@@ -224,6 +224,9 @@ function createToolbarMoreMenuConfigV2(baseUrl?: string) {
               !flags.isHovering() &&
               isEdgelessMode &&
               gfx.selection.selectedElements.length > 0,
+            run: ({ std }) => {
+              copyAsImage(std);
+            },
           },
           {
             id: 'copy-link-to-block',
@@ -612,7 +615,7 @@ function createSurfaceRefToolbarConfig(baseUrl?: string): ToolbarModuleConfig {
                 .iconSize=${'16px'}
                 .iconContainerPadding=${4}
               >
-                ${OpenInNewIcon()} ${ArrowDownSmallIcon()}
+                ${OpenInNewIcon()} ${EditorChevronDown}
               </editor-icon-button>`}
             >
               <div data-orientation="vertical" style=${styles}>

@@ -145,6 +145,7 @@ export const useExplorerTagNodeOperations = (
             type={'danger'}
             prefixIcon={<DeleteIcon />}
             onClick={handleMoveToTrash}
+            data-testid="tag-delete-button"
           >
             {t['Delete']()}
           </MenuItem>

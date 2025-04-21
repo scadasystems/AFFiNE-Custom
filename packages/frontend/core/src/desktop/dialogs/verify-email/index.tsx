@@ -117,19 +117,19 @@ export const VerifyEmailDialog = ({
           disabled={true}
           value={email}
         />
+        <Button
+          variant="primary"
+          size="extraLarge"
+          style={{ width: '100%' }}
+          disabled={hasSentEmail}
+          loading={loading}
+          onClick={onSendEmail}
+        >
+          {hasSentEmail
+            ? t['com.affine.auth.sent']()
+            : t['com.affine.auth.send.verify.email.hint']()}
+        </Button>
       </AuthContent>
-      <Button
-        variant="primary"
-        size="extraLarge"
-        style={{ width: '100%' }}
-        disabled={hasSentEmail}
-        loading={loading}
-        onClick={onSendEmail}
-      >
-        {hasSentEmail
-          ? t['com.affine.auth.sent']()
-          : t['com.affine.auth.send.verify.email.hint']()}
-      </Button>
     </Modal>
   );
 };

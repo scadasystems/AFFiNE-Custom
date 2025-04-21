@@ -4,12 +4,12 @@ import type {
 } from '@affine/core/components/page-list';
 import { fuzzyMatch } from '@affine/core/utils/fuzzy-match';
 import { I18n } from '@affine/i18n';
+import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
+import type { DocMeta } from '@blocksuite/affine/store';
 import type {
   LinkedMenuGroup,
   LinkedMenuItem,
-} from '@blocksuite/affine/blocks/root';
-import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
-import type { DocMeta } from '@blocksuite/affine/store';
+} from '@blocksuite/affine/widgets/linked-doc';
 import { CollectionsIcon } from '@blocksuite/icons/lit';
 import { computed } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
@@ -143,43 +143,42 @@ export class SearchMenuService extends Service {
   // only search docs by title, excluding blocks
   private searchDocs$(query: string) {
     return this.docsSearch.indexer
-      .aggregate$(
+      .search$(
         'doc',
         {
-          type: 'boolean',
-          occur: 'must',
-          queries: [
+          type: 'match',
+          field: 'title',
+          match: query,
+        },
+        {
+          fields: ['docId', 'title'],
+          pagination: {
+            limit: 1,
+          },
+          highlights: [
             {
-              type: 'match',
               field: 'title',
-              match: query,
+              before: `<span style="color: ${cssVarV2('text/emphasis')}">`,
+              end: '</span>',
             },
           ],
-        },
-        'docId',
-        {
-          hits: {
-            fields: ['docId', 'title'],
-            pagination: {
-              limit: 1,
-            },
-            highlights: [
-              {
-                field: 'title',
-                before: `<span style="color: ${cssVarV2('text/emphasis')}">`,
-                end: '</span>',
-              },
-            ],
-          },
         }
       )
       .pipe(
-        map(({ buckets }) =>
-          buckets.map(bucket => {
+        map(({ nodes }) =>
+          nodes.map(node => {
+            const id =
+              typeof node.fields.docId === 'string'
+                ? node.fields.docId
+                : node.fields.docId[0];
+            const title =
+              typeof node.fields.title === 'string'
+                ? node.fields.title
+                : node.fields.title[0];
             return {
-              id: bucket.key,
-              title: bucket.hits.nodes[0].fields.title,
-              highlights: bucket.hits.nodes[0].highlights.title[0],
+              id,
+              title,
+              highlights: node.highlights.title[0],
             };
           })
         )

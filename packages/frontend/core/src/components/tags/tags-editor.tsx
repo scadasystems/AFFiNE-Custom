@@ -1,4 +1,10 @@
-import { IconButton, Menu, RowInput, Scrollable } from '@affine/component';
+import {
+  Divider,
+  IconButton,
+  Menu,
+  RowInput,
+  Scrollable,
+} from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
@@ -249,6 +255,9 @@ export const TagsEditor = ({
             placeholder="Type here ..."
           />
         </InlineTagList>
+        {BUILD_CONFIG.isMobileEdition ? null : (
+          <Divider size="thinner" className={styles.tagDivider} />
+        )}
       </div>
       <div className={styles.tagsEditorTagsSelector}>
         <div className={styles.tagsEditorTagsSelectorHeader}>

@@ -246,7 +246,7 @@ export class SocketConnection extends AutoReconnectConnection<{
         }),
         new Promise<void>((_resolve, reject) => {
           signal?.addEventListener('abort', () => {
-            reject(new Error('Aborted'));
+            reject(signal.reason);
           });
         }),
       ]);

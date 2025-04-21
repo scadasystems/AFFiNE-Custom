@@ -409,8 +409,8 @@ const ExplorerFolderNodeFolder = ({
         />
       ))}
       <AddItemPlaceholder
-        label={t['com.affine.rootAppSidebar.organize.folder.add-docs']()}
-        onClick={() => handleAddToFolder('doc')}
+        label={t['com.affine.rootAppSidebar.organize.folder.new-doc']()}
+        onClick={handleNewDoc}
         data-testid="new-folder-in-folder-button"
       />
     </ExplorerTreeNode>

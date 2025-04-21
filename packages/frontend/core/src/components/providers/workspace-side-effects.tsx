@@ -12,6 +12,7 @@ import { useRegisterFindInPageCommands } from '@affine/core/components/hooks/aff
 import { useRegisterWorkspaceCommands } from '@affine/core/components/hooks/use-register-workspace-commands';
 import { OverCapacityNotification } from '@affine/core/components/over-capacity';
 import {
+  AuthService,
   EventSourceService,
   FetchService,
   GraphQLService,
@@ -31,8 +32,8 @@ import {
 } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { ZipTransformer } from '@blocksuite/affine/blocks/root';
 import type { DocMode } from '@blocksuite/affine/model';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import {
   effect,
   fromPromise,
@@ -148,6 +149,7 @@ export const WorkspaceSideEffects = () => {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
   const fetchService = useService(FetchService);
+  const authService = useService(AuthService);
 
   useEffect(() => {
     const dispose = setupAIProvider(
@@ -156,7 +158,8 @@ export const WorkspaceSideEffects = () => {
         fetchService.fetch,
         eventSourceService.eventSource
       ),
-      globalDialogService
+      globalDialogService,
+      authService
     );
     return () => {
       dispose();
@@ -167,6 +170,7 @@ export const WorkspaceSideEffects = () => {
     workspaceDialogService,
     graphqlService,
     globalDialogService,
+    authService,
   ]);
 
   useRegisterWorkspaceCommands();

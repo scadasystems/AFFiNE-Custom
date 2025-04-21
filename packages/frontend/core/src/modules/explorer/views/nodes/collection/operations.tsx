@@ -193,6 +193,7 @@ export const useExplorerCollectionNodeOperations = (
           <MenuItem
             type={'danger'}
             prefixIcon={<DeleteIcon />}
+            data-testid="collection-delete-button"
             onClick={handleDeleteCollection}
           >
             {t['Delete']()}

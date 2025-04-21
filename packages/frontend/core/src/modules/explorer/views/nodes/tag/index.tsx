@@ -28,10 +28,8 @@ export const ExplorerTagNode = ({
   operations: additionalOperations,
   dropEffect,
   canDrop,
-  defaultRenaming,
 }: {
   tagId: string;
-  defaultRenaming?: boolean;
 } & GenericExplorerNode) => {
   const t = useI18n();
   const { tagService, globalContextService } = useServices({
@@ -179,7 +177,6 @@ export const ExplorerTagNode = ({
       setCollapsed={setCollapsed}
       to={`/tag/${tagId}`}
       active={active}
-      defaultRenaming={defaultRenaming}
       reorderable={reorderable}
       onRename={handleRename}
       canDrop={handleCanDrop}

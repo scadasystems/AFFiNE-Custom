@@ -88,6 +88,9 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
         p: () => {
           this._setEdgelessTool('brush');
         },
+        'Shift-p': () => {
+          this._setEdgelessTool('highlighter');
+        },
         e: () => {
           this._setEdgelessTool('eraser');
         },

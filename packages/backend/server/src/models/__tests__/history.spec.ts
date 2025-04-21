@@ -50,7 +50,7 @@ test('should create a history record', async t => {
   const snapshot = {
     spaceId: workspace.id,
     docId: randomUUID(),
-    blob: Buffer.from('blob1'),
+    blob: Uint8Array.from([1, 2, 3]),
     timestamp: Date.now(),
     editorId: user.id,
   };

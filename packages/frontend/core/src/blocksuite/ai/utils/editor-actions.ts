@@ -110,7 +110,11 @@ export const replace = async (
 
   if (textSelection) {
     host.std.command.exec(deleteTextCommand, { textSelection });
-    const { snapshot, transformer } = await markdownToSnapshot(content, host);
+    const { snapshot, transformer } = await markdownToSnapshot(
+      content,
+      host.doc,
+      host
+    );
     if (snapshot) {
       await transformer.snapshotToSlice(
         snapshot,

@@ -104,6 +104,115 @@ function withDescendantElements(elements: GfxModel[]) {
 
 const MARGIN = 20;
 
+export function copyAsImage(std: BlockStdScope) {
+  if (!apis) {
+    notify.error({
+      title: I18n.t('com.affine.copy.asImage.notAvailable.title'),
+      message: I18n.t('com.affine.copy.asImage.notAvailable.message'),
+      action: {
+        label: I18n.t('com.affine.copy.asImage.notAvailable.action'),
+        onClick: () => {
+          window.open('https://affine.pro/download');
+        },
+      },
+    });
+    return;
+  }
+
+  const gfx = std.get(GfxControllerIdentifier);
+
+  let selected = gfx.selection.selectedElements;
+  // select mindmap if root node selected
+  const maybeMindmap = selected[0];
+  const mindmapId = maybeMindmap.group?.id;
+  if (
+    selected.length === 1 &&
+    mindmapId &&
+    (isMindMapRoot(maybeMindmap) || isMindmapChild(maybeMindmap))
+  ) {
+    gfx.selection.set({ elements: [mindmapId] });
+  }
+
+  // select bound
+  selected = gfx.selection.selectedElements;
+  const elements = withDescendantElements(selected);
+  const bounds = elements.map(element => Bound.deserialize(element.xywh));
+  const bound = getCommonBound(bounds);
+  if (!bound) return;
+  const { zoom } = gfx.viewport;
+  const exBound = expandBound(bound, MARGIN * zoom);
+
+  // fit to screen
+  if (
+    !isInside(gfx.viewport.viewportBounds, exBound) ||
+    gfx.viewport.zoom < 1
+  ) {
+    gfx.viewport.setViewportByBound(bound, [20, 20, 20, 20], false);
+    if (gfx.viewport.zoom > 1) {
+      gfx.viewport.setZoom(1);
+    }
+  }
+
+  // hide unselected overlap elements
+  const overlapElements = gfx.gfxElements.filter(ele => {
+    const eleBound = Bound.deserialize(ele.xywh);
+    const exEleBound = expandBound(eleBound, MARGIN * zoom);
+    const isSelected = elements.includes(ele);
+    return !isSelected && isOverlap(exBound, exEleBound);
+  });
+  hideEdgelessElements(overlapElements, std);
+
+  // add css style
+  const styleEle = document.createElement('style');
+  styleEle.innerHTML = snapshotStyle;
+  document.head.append(styleEle);
+
+  // capture image
+  setTimeout(() => {
+    if (!apis) return;
+    try {
+      const domRect = getSelectedRect();
+      const { zoom } = gfx.viewport;
+      const isFrameSelected =
+        selected.length === 1 &&
+        (selected[0] as GfxBlockElementModel).flavour === 'affine:frame';
+      const margin = isFrameSelected ? -2 : MARGIN * zoom;
+
+      gfx.selection.clear();
+
+      apis.ui
+        .captureArea({
+          x: domRect.left - margin,
+          y: domRect.top - margin,
+          width: domRect.width + margin * 2,
+          height: domRect.height + margin * 2,
+        })
+        .then(() => {
+          notify.success({
+            title: I18n.t('com.affine.copy.asImage.success'),
+          });
+        })
+        .catch(e => {
+          notify.error({
+            title: I18n.t('com.affine.copy.asImage.failed'),
+            message: String(e),
+          });
+        })
+        .finally(() => {
+          styleEle.remove();
+          showEdgelessElements(overlapElements, std);
+        });
+    } catch (e) {
+      styleEle.remove();
+      showEdgelessElements(overlapElements, std);
+      notify.error({
+        title: I18n.t('com.affine.copy.asImage.failed'),
+        message: String(e),
+      });
+    }
+  }, 100);
+}
+
 export function createCopyAsPngMenuItem(framework: FrameworkProvider) {
   return {
     icon: CopyAsImgaeIcon({ width: '20', height: '20' }),
@@ -115,113 +224,9 @@ export function createCopyAsPngMenuItem(framework: FrameworkProvider) {
       const mode = editor.mode$.value;
       return mode === 'edgeless';
     },
-    action: async (ctx: MenuContext) => {
-      if (!apis) {
-        notify.error({
-          title: I18n.t('com.affine.copy.asImage.notAvailable.title'),
-          message: I18n.t('com.affine.copy.asImage.notAvailable.message'),
-          action: {
-            label: I18n.t('com.affine.copy.asImage.notAvailable.action'),
-            onClick: () => {
-              window.open('https://affine.pro/download');
-            },
-          },
-        });
-        return;
-      }
-
-      const gfx = ctx.host.std.get(GfxControllerIdentifier);
-
-      let selected = gfx.selection.selectedElements;
-      // select mindmap if root node selected
-      const maybeMindmap = selected[0];
-      const mindmapId = maybeMindmap.group?.id;
-      if (
-        selected.length === 1 &&
-        mindmapId &&
-        (isMindMapRoot(maybeMindmap) || isMindmapChild(maybeMindmap))
-      ) {
-        gfx.selection.set({ elements: [mindmapId] });
-      }
-
-      // select bound
-      selected = gfx.selection.selectedElements;
-      const elements = withDescendantElements(selected);
-      const bounds = elements.map(element => Bound.deserialize(element.xywh));
-      const bound = getCommonBound(bounds);
-      if (!bound) return;
-      const { zoom } = gfx.viewport;
-      const exBound = expandBound(bound, MARGIN * zoom);
-
-      // fit to screen
-      if (
-        !isInside(gfx.viewport.viewportBounds, exBound) ||
-        gfx.viewport.zoom < 1
-      ) {
-        gfx.viewport.setViewportByBound(bound, [20, 20, 20, 20], false);
-        if (gfx.viewport.zoom > 1) {
-          gfx.viewport.setZoom(1);
-        }
-      }
-
-      // hide unselected overlap elements
-      const overlapElements = gfx.gfxElements.filter(ele => {
-        const eleBound = Bound.deserialize(ele.xywh);
-        const exEleBound = expandBound(eleBound, MARGIN * zoom);
-        const isSelected = elements.includes(ele);
-        return !isSelected && isOverlap(exBound, exEleBound);
-      });
-      hideEdgelessElements(overlapElements, ctx.host.std);
-
-      // add css style
-      const styleEle = document.createElement('style');
-      styleEle.innerHTML = snapshotStyle;
-      document.head.append(styleEle);
-
-      // capture image
-      setTimeout(() => {
-        if (!apis) return;
-        try {
-          const domRect = getSelectedRect();
-          const { zoom } = gfx.viewport;
-          const isFrameSelected =
-            selected.length === 1 &&
-            (selected[0] as GfxBlockElementModel).flavour === 'affine:frame';
-          const margin = isFrameSelected ? -2 : MARGIN * zoom;
-
-          gfx.selection.clear();
-
-          apis.ui
-            .captureArea({
-              x: domRect.left - margin,
-              y: domRect.top - margin,
-              width: domRect.width + margin * 2,
-              height: domRect.height + margin * 2,
-            })
-            .then(() => {
-              notify.success({
-                title: I18n.t('com.affine.copy.asImage.success'),
-              });
-            })
-            .catch(e => {
-              notify.error({
-                title: I18n.t('com.affine.copy.asImage.failed'),
-                message: String(e),
-              });
-            })
-            .finally(() => {
-              styleEle.remove();
-              showEdgelessElements(overlapElements, ctx.host.std);
-            });
-        } catch (e) {
-          styleEle.remove();
-          showEdgelessElements(overlapElements, ctx.host.std);
-          notify.error({
-            title: I18n.t('com.affine.copy.asImage.failed'),
-            message: String(e),
-          });
-        }
-      }, 100);
+    action: (ctx: MenuContext) => {
+      const std = ctx.std;
+      return copyAsImage(std);
     },
   };
 }

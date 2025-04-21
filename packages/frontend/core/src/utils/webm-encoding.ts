@@ -8,7 +8,61 @@ interface AudioEncodingConfig {
   bitrate?: number;
 }
 
+interface AudioEncodingResult {
+  encodedChunks: EncodedAudioChunk[];
+  config: AudioEncodingConfig;
+}
+
 const logger = new DebugLogger('webm-encoding');
+
+// Constants
+const DEFAULT_BITRATE = 64000;
+const MAX_SLICE_DURATION_SECONDS = 10 * 60; // 10 minutes
+const MIN_SLICE_DURATION_SECONDS = 5 * 60; // 5 minutes
+const AUDIO_LEVEL_THRESHOLD = 0.02; // Threshold for "silence" detection
+
+/**
+ * Converts various blob formats to ArrayBuffer
+ */
+async function blobToArrayBuffer(
+  blob: Blob | ArrayBuffer | Uint8Array
+): Promise<ArrayBuffer> {
+  if (blob instanceof Blob) {
+    return await blob.arrayBuffer();
+  } else if (blob instanceof Uint8Array) {
+    return blob.buffer instanceof ArrayBuffer
+      ? blob.buffer
+      : blob.slice().buffer;
+  } else {
+    return blob;
+  }
+}
+
+/**
+ * Extracts a combined Float32Array from an AudioBuffer
+ */
+function extractAudioData(
+  audioBuffer: AudioBuffer,
+  startSample: number = 0,
+  endSample?: number
+): Float32Array {
+  const numberOfChannels = audioBuffer.numberOfChannels;
+  const sampleCount =
+    endSample !== undefined
+      ? endSample - startSample
+      : audioBuffer.length - startSample;
+
+  const audioData = new Float32Array(sampleCount * numberOfChannels);
+
+  for (let channel = 0; channel < numberOfChannels; channel++) {
+    const channelData = audioBuffer.getChannelData(channel);
+    for (let i = 0; i < sampleCount; i++) {
+      audioData[i * numberOfChannels + channel] = channelData[startSample + i];
+    }
+  }
+
+  return audioData;
+}
 
 /**
  * Creates and configures an Opus encoder with the given settings
@@ -31,7 +85,7 @@ export function createOpusEncoder(config: AudioEncodingConfig): {
     codec: 'opus',
     sampleRate: config.sampleRate,
     numberOfChannels: config.numberOfChannels,
-    bitrate: config.bitrate ?? 64000,
+    bitrate: config.bitrate ?? DEFAULT_BITRATE,
   });
 
   return { encoder, encodedChunks };
@@ -105,6 +159,32 @@ export function muxToWebM(
 }
 
 /**
+ * Process and encode audio data to Opus chunks
+ */
+async function encodeAudioBufferToOpus(
+  audioBuffer: AudioBuffer,
+  targetBitrate: number = DEFAULT_BITRATE
+): Promise<AudioEncodingResult> {
+  const config: AudioEncodingConfig = {
+    sampleRate: audioBuffer.sampleRate,
+    numberOfChannels: audioBuffer.numberOfChannels,
+    bitrate: targetBitrate,
+  };
+
+  const { encoder, encodedChunks } = createOpusEncoder(config);
+  const audioData = extractAudioData(audioBuffer);
+
+  await encodeAudioFrames({
+    audioData,
+    numberOfChannels: config.numberOfChannels,
+    sampleRate: config.sampleRate,
+    encoder,
+  });
+
+  return { encodedChunks, config };
+}
+
+/**
  * Encodes raw audio data to Opus in WebM container.
  */
 export async function encodeRawBufferToOpus({
@@ -170,53 +250,142 @@ export async function encodeRawBufferToOpus({
  */
 export async function encodeAudioBlobToOpus(
   blob: Blob | ArrayBuffer | Uint8Array,
-  targetBitrate: number = 64000
+  targetBitrate: number = DEFAULT_BITRATE
 ): Promise<Uint8Array> {
   const audioContext = new AudioContext();
   logger.debug('Encoding audio blob to Opus');
 
   try {
-    let buffer: ArrayBuffer;
-    if (blob instanceof Blob) {
-      buffer = await blob.arrayBuffer();
-    } else if (blob instanceof Uint8Array) {
-      buffer =
-        blob.buffer instanceof ArrayBuffer ? blob.buffer : blob.slice().buffer;
-    } else {
-      buffer = blob;
-    }
-
-    const audioBuffer = await audioContext.decodeAudioData(buffer);
-
-    const config: AudioEncodingConfig = {
-      sampleRate: audioBuffer.sampleRate,
-      numberOfChannels: audioBuffer.numberOfChannels,
-      bitrate: targetBitrate,
-    };
-
-    const { encoder, encodedChunks } = createOpusEncoder(config);
-
-    // Combine all channels into a single Float32Array
-    const audioData = new Float32Array(
-      audioBuffer.length * config.numberOfChannels
+    const arrayBuffer = await blobToArrayBuffer(blob);
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const { encodedChunks, config } = await encodeAudioBufferToOpus(
+      audioBuffer,
+      targetBitrate
     );
-    for (let channel = 0; channel < config.numberOfChannels; channel++) {
-      const channelData = audioBuffer.getChannelData(channel);
-      for (let i = 0; i < channelData.length; i++) {
-        audioData[i * config.numberOfChannels + channel] = channelData[i];
-      }
-    }
-
-    await encodeAudioFrames({
-      audioData,
-      numberOfChannels: config.numberOfChannels,
-      sampleRate: config.sampleRate,
-      encoder,
-    });
 
     const webm = muxToWebM(encodedChunks, config);
     logger.debug('Encoded audio blob to Opus');
     return webm;
+  } finally {
+    await audioContext.close();
+  }
+}
+
+/**
+ * Finds the best slice point based on audio level
+ */
+function findSlicePoint(
+  audioBuffer: AudioBuffer,
+  startSample: number,
+  endSample: number,
+  minSliceSamples: number
+): number {
+  // If we have more than min slice duration and not at the end,
+  // look for a good splitting point (low audio level)
+  if (
+    endSample < audioBuffer.length &&
+    endSample - startSample > minSliceSamples
+  ) {
+    // Start checking from min slice duration point
+    const checkStartSample = startSample + minSliceSamples;
+    const numberOfChannels = audioBuffer.numberOfChannels;
+
+    // Scan forward for a good split point (low audio level)
+    for (let i = checkStartSample; i < endSample; i++) {
+      // Calculate average level across all channels at this sample
+      let level = 0;
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const data = audioBuffer.getChannelData(channel);
+        level += Math.abs(data[i]);
+      }
+      level /= numberOfChannels;
+
+      // If we found a quiet spot, use it as the split point
+      if (level < AUDIO_LEVEL_THRESHOLD) {
+        return i;
+      }
+    }
+  }
+
+  // If no good splitting point is found, use the original end sample
+  return endSample;
+}
+
+// Since the audio blob could be long and make the transcribe service busy,
+// we need to encode the audio blob to opus slices
+// Slice logic:
+// 1. Max slice duration is 10 minutes
+// 2. Min slice duration is 5 minutes
+// 3. If a new slice begins and the duration reached 5 minutes
+//    we start a new slice when the audio level value is below the threshold
+// 4. If the audio level value is above the threshold, we continue the current slice
+export async function encodeAudioBlobToOpusSlices(
+  blob: Blob | ArrayBuffer | Uint8Array,
+  targetBitrate: number = DEFAULT_BITRATE
+): Promise<Uint8Array[]> {
+  const audioContext = new AudioContext();
+
+  try {
+    const arrayBuffer = await blobToArrayBuffer(blob);
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const slices: Uint8Array[] = [];
+
+    // Define slicing parameters
+    const sampleRate = audioBuffer.sampleRate;
+    const numberOfChannels = audioBuffer.numberOfChannels;
+
+    // Calculate sizes in samples
+    const maxSliceSamples = MAX_SLICE_DURATION_SECONDS * sampleRate;
+    const minSliceSamples = MIN_SLICE_DURATION_SECONDS * sampleRate;
+    const totalSamples = audioBuffer.length;
+
+    // Start slicing
+    let startSample = 0;
+
+    while (startSample < totalSamples) {
+      // Determine end sample for this slice
+      let endSample = Math.min(startSample + maxSliceSamples, totalSamples);
+
+      // Find the best slice point based on audio levels
+      endSample = findSlicePoint(
+        audioBuffer,
+        startSample,
+        endSample,
+        minSliceSamples
+      );
+
+      // Create a slice from startSample to endSample
+      const audioData = extractAudioData(audioBuffer, startSample, endSample);
+
+      // Encode this slice to Opus
+      const { encoder, encodedChunks } = createOpusEncoder({
+        sampleRate,
+        numberOfChannels,
+        bitrate: targetBitrate,
+      });
+
+      await encodeAudioFrames({
+        audioData,
+        numberOfChannels,
+        sampleRate,
+        encoder,
+      });
+
+      // Mux to WebM and add to slices
+      const webm = muxToWebM(encodedChunks, {
+        sampleRate,
+        numberOfChannels,
+        bitrate: targetBitrate,
+      });
+
+      slices.push(webm);
+
+      // Move to next slice
+      startSample = endSample;
+    }
+
+    logger.debug(`Encoded audio blob to ${slices.length} Opus slices`);
+    return slices;
   } finally {
     await audioContext.close();
   }

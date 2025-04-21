@@ -1,18 +1,15 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIAction/BrainstormIdeasWithMindMap', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should generate a mind map for the selected content', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { brainstormMindMap } = await utils.editor.askAIWithText(
@@ -25,7 +22,7 @@ test.describe('AIAction/BrainstormIdeasWithMindMap', () => {
   });
 
   test('should generate a mind map for the selected text block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { brainstormMindMap } = await utils.editor.askAIWithEdgeless(
@@ -40,7 +37,7 @@ test.describe('AIAction/BrainstormIdeasWithMindMap', () => {
   });
 
   test('should generate a mind map for the selected note block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { brainstormMindMap } = await utils.editor.askAIWithEdgeless(

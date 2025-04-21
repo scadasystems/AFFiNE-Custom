@@ -99,9 +99,6 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
     }
 
     this._anchorModelDisposables = new DisposableGroup();
-    this._anchorModelDisposables.add(
-      blockModel.propsUpdated.subscribe(() => this.hide())
-    );
 
     this._anchorModelDisposables.add(
       blockModel.deleted.subscribe(() => this.hide())

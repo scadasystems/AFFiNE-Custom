@@ -329,11 +329,11 @@ test('click display button to group pages', async ({ page }) => {
 
   // the group header should appear
   await expect(
-    page.locator('[data-testid="group-label-favourited-1"]')
+    page.locator('[data-testid="group-label-favourited"]')
   ).toBeVisible();
 
   await expect(
-    page.locator('[data-testid="group-label-notFavourited-1"]')
+    page.locator('[data-testid="group-label-notFavourited"]')
   ).toBeVisible();
 });
 

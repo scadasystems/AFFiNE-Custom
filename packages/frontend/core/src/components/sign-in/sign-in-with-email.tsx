@@ -11,7 +11,7 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import { AuthService, CaptchaService } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
 import { Unreachable } from '@affine/env/constant';
-import type { UserFriendlyError } from '@affine/error';
+import { UserFriendlyError } from '@affine/error';
 import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import {
@@ -95,8 +95,10 @@ export const SignInWithEmailStep = ({
       );
     } catch (err) {
       console.error(err);
+      const error = UserFriendlyError.fromAny(err);
       notify.error({
-        title: 'Failed to send email, please try again.',
+        title: 'Failed to sign in',
+        message: t[`error.${error.name}`](error.data),
       });
     }
     setIsSending(false);
@@ -109,6 +111,7 @@ export const SignInWithEmailStep = ({
     needCaptcha,
     state.redirectUrl,
     verifyToken,
+    t,
   ]);
 
   useEffect(() => {

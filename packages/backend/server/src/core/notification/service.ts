@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 
 import { NotificationNotFound, PaginationInput, URLHelper } from '../../base';
 import {
@@ -335,7 +335,7 @@ export class NotificationService {
       await this.models.notification.markAsRead(notificationId, userId);
     } catch (err) {
       if (
-        err instanceof PrismaClientKnownRequestError &&
+        err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === 'P2025'
       ) {
         // https://www.prisma.io/docs/orm/reference/error-reference#p2025

@@ -53,7 +53,7 @@ export class FrameBlockComponent extends GfxBlockComponent<FrameBlockModel> {
     };
   }
 
-  override onSelected(context: SelectedContext): void {
+  override onSelected(context: SelectedContext): boolean | void {
     const { x, y } = context.position;
 
     if (
@@ -63,10 +63,10 @@ export class FrameBlockComponent extends GfxBlockComponent<FrameBlockModel> {
         // otherwise if the frame has title, then ignore it because in this case the frame cannot be selected by frame body
         this.model.props.title.length)
     ) {
-      return;
+      return false;
     }
 
-    super.onSelected(context);
+    return super.onSelected(context);
   }
 
   override renderGfxBlock() {

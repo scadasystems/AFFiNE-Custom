@@ -98,14 +98,16 @@ interface WebExplorerTreeNodeProps extends BaseExplorerTreeNodeProps {
  * specific rename modal for explorer tree node,
  * Separate it into a separate component to prevent re-rendering the entire component when width changes.
  */
-const ExplorerTreeNodeRenameModal = ({
+export const ExplorerTreeNodeRenameModal = ({
   setRenaming,
   handleRename,
   rawName,
+  className,
 }: {
   setRenaming: (renaming: boolean) => void;
   handleRename: (newName: string) => void;
   rawName: string | undefined;
+  className?: string;
 }) => {
   const appSidebarService = useService(AppSidebarService).sidebar;
   const sidebarWidth = useLiveData(appSidebarService.width$);
@@ -117,7 +119,7 @@ const ExplorerTreeNodeRenameModal = ({
       onRename={handleRename}
       currentName={rawName ?? ''}
     >
-      <div className={styles.itemRenameAnchor} />
+      <div className={clsx(styles.itemRenameAnchor, className)} />
     </RenameModal>
   );
 };

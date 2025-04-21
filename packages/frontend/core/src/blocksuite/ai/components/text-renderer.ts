@@ -1,5 +1,5 @@
 import { createReactComponentFromLit } from '@affine/component';
-import { MarkdownAdapterExtension } from '@blocksuite/affine/adapters';
+import { getMarkdownAdapterExtensions } from '@blocksuite/affine/adapters';
 import {
   defaultImageProxyMiddleware,
   ImageProxyService,
@@ -211,7 +211,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
         provider = this.host.std.provider;
       } else {
         const container = new Container();
-        [...MarkdownAdapterExtension].forEach(ext => {
+        getMarkdownAdapterExtensions().forEach(ext => {
           ext.setup(container);
         });
 
@@ -358,6 +358,7 @@ export const createTextRenderer: (
 ) => AffineAIPanelWidgetConfig['answerRenderer'] = (host, options) => {
   return (answer, state) => {
     return html`<text-renderer
+      contenteditable="false"
       .host=${host}
       .answer=${answer}
       .state=${state}

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import OpenAI from 'openai';
 
 import {
   AFFiNELogger,
@@ -49,7 +48,7 @@ export class CopilotContextDocJob {
     this.supportEmbedding =
       await this.models.copilotContext.checkEmbeddingAvailable();
     this.client = new OpenAIEmbeddingClient(
-      new OpenAI(this.config.copilot.providers.openai)
+      this.config.copilot.providers.openai
     );
   }
 

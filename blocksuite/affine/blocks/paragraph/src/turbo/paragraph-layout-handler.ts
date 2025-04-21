@@ -6,8 +6,9 @@ import {
   segmentSentences,
 } from '@blocksuite/affine-gfx-turbo-renderer';
 import type { Container } from '@blocksuite/global/di';
-import type { GfxBlockComponent } from '@blocksuite/std';
-import { clientToModelCoord } from '@blocksuite/std/gfx';
+import type { EditorHost, GfxBlockComponent } from '@blocksuite/std';
+import { clientToModelCoord, type ViewportRecord } from '@blocksuite/std/gfx';
+import type { BlockModel } from '@blocksuite/store';
 
 import type { ParagraphLayout } from './paragraph-painter.worker';
 
@@ -21,58 +22,54 @@ export class ParagraphLayoutHandlerExtension extends BlockLayoutHandlerExtension
     );
   }
 
-  queryLayout(component: GfxBlockComponent): ParagraphLayout | null {
+  override queryLayout(
+    model: BlockModel,
+    host: EditorHost,
+    viewportRecord: ViewportRecord
+  ): ParagraphLayout | null {
+    const component = host.std.view.getBlock(model.id) as GfxBlockComponent;
     const paragraphSelector =
       '.affine-paragraph-rich-text-wrapper [data-v-text="true"]';
-    const paragraphNodes = component.querySelectorAll(paragraphSelector);
-
-    if (paragraphNodes.length === 0) return null;
-
-    const viewportRecord = component.gfx.viewport.deserializeRecord(
-      component.dataset.viewportState
-    );
-
-    if (!viewportRecord) return null;
+    const paragraphNode = component.querySelector(paragraphSelector);
+    if (!paragraphNode) return null;
 
     const { zoom, viewScale } = viewportRecord;
     const paragraph: ParagraphLayout = {
       type: 'affine:paragraph',
       sentences: [],
+      blockId: model.id,
+      rect: { x: 0, y: 0, w: 0, h: 0 },
     };
 
-    paragraphNodes.forEach(paragraphNode => {
-      const computedStyle = window.getComputedStyle(paragraphNode);
-      const fontSizeStr = computedStyle.fontSize;
-      const fontSize = parseInt(fontSizeStr);
+    const computedStyle = window.getComputedStyle(paragraphNode);
+    const fontSizeStr = computedStyle.fontSize;
+    const fontSize = parseInt(fontSizeStr);
 
-      const sentences = segmentSentences(paragraphNode.textContent || '');
-      const sentenceLayouts = sentences.map(sentence => {
-        const sentenceRects = getSentenceRects(paragraphNode, sentence);
-        const rects = sentenceRects.map(({ text, rect }) => {
-          const [modelX, modelY] = clientToModelCoord(viewportRecord, [
-            rect.x,
-            rect.y,
-          ]);
-          return {
-            text,
-            rect: {
-              x: modelX,
-              y: modelY,
-              w: rect.w / zoom / viewScale,
-              h: rect.h / zoom / viewScale,
-            },
-          };
-        });
+    const sentences = segmentSentences(paragraphNode.textContent || '');
+    const sentenceLayouts = sentences.map(sentence => {
+      const sentenceRects = getSentenceRects(paragraphNode, sentence);
+      const rects = sentenceRects.map(({ text, rect }) => {
+        const [modelX, modelY] = clientToModelCoord(viewportRecord, [
+          rect.x,
+          rect.y,
+        ]);
         return {
-          text: sentence,
-          rects,
-          fontSize,
+          text,
+          rect: {
+            x: modelX,
+            y: modelY,
+            w: rect.w / zoom / viewScale,
+            h: rect.h / zoom / viewScale,
+          },
         };
       });
-
-      paragraph.sentences.push(...sentenceLayouts);
+      return {
+        text: sentence,
+        rects,
+        fontSize,
+      };
     });
-
+    paragraph.sentences.push(...sentenceLayouts);
     return paragraph;
   }
 

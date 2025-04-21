@@ -59,9 +59,6 @@ export class AIChatComposer extends SignalWatcher(
   accessor createSessionId!: () => Promise<string | undefined>;
 
   @property({ attribute: false })
-  accessor createChatSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
   accessor chatContextValue!: AIChatInputContext;
 
   @property({ attribute: false })
@@ -123,7 +120,7 @@ export class AIChatComposer extends SignalWatcher(
         .host=${this.host}
         .chips=${this.chips}
         .getSessionId=${this.getSessionId}
-        .createSessionId=${this.createChatSessionId}
+        .createSessionId=${this.createSessionId}
         .getContextId=${this._getContextId}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}

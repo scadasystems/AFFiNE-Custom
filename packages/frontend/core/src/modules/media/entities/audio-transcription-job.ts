@@ -46,7 +46,7 @@ const logger = new DebugLogger('audio-transcription-job');
 export class AudioTranscriptionJob extends Entity<{
   readonly blockProps: TranscriptionBlockProps;
   readonly blobId: string;
-  readonly getAudioFile: () => Promise<File>;
+  readonly getAudioFiles: () => Promise<File[]>;
 }> {
   constructor(
     private readonly workspaceServerService: WorkspaceServerService,
@@ -68,7 +68,7 @@ export class AudioTranscriptionJob extends Entity<{
     AudioTranscriptionJobStore,
     {
       blobId: this.props.blobId,
-      getAudioFile: this.props.getAudioFile,
+      getAudioFiles: this.props.getAudioFiles,
     }
   );
 

@@ -12,6 +12,7 @@ const AudioWrapper = () => {
   const [seekTime, setSeekTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioUrlRef = useRef<string | null>(null);
 
@@ -150,6 +151,13 @@ const AudioWrapper = () => {
     },
     [playbackState]
   );
+
+  const handlePlaybackRateChange = useCallback((rate: number) => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+      setPlaybackRate(rate);
+    }
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -298,6 +306,8 @@ const AudioWrapper = () => {
             onPause={handlePause}
             onStop={handleStop}
             onSeek={handleSeek}
+            playbackRate={playbackRate}
+            onPlaybackRateChange={handlePlaybackRateChange}
           />
           <AudioPlayer
             name={audioFile.name}
@@ -311,6 +321,8 @@ const AudioWrapper = () => {
             onPause={handlePause}
             onStop={handleStop}
             onSeek={handleSeek}
+            playbackRate={playbackRate}
+            onPlaybackRateChange={handlePlaybackRateChange}
           />
         </>
       )}

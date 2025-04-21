@@ -39,8 +39,8 @@ test.after.always(async () => {
 const snapshot: Snapshot = {
   workspaceId: '1',
   id: 'doc1',
-  blob: Buffer.from([1, 0]),
-  state: Buffer.from([0]),
+  blob: Uint8Array.from([1, 0]),
+  state: Uint8Array.from([0]),
   seq: 0,
   updatedAt: new Date(),
   createdAt: new Date(),
@@ -276,5 +276,5 @@ test('should be able to recover from history', async t => {
   t.is(history2.timestamp.getTime(), snapshot.updatedAt.getTime());
 
   // new history data force created with snapshot state before recovered
-  t.deepEqual(history2.blob, Buffer.from([1, 1]));
+  t.deepEqual(history2.blob, Uint8Array.from([1, 1]));
 });

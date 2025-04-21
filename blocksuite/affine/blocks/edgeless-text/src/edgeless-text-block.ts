@@ -259,7 +259,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
     };
   }
 
-  override onSelected(context: SelectedContext) {
+  override onSelected(context: SelectedContext): void | boolean {
     const { selected, multiSelect, event: e } = context;
     const { editing } = this.gfx.selection;
     const alreadySelected = this.gfx.selection.has(this.model.id);
@@ -318,7 +318,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
         })
         .catch(console.error);
     } else {
-      super.onSelected(context);
+      return super.onSelected(context);
     }
   }
 

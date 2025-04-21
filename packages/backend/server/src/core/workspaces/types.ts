@@ -88,6 +88,9 @@ export class WorkspaceType extends WorkspaceFeatureType {
   @Field({ description: 'Enable url previous when sharing' })
   enableUrlPreview!: boolean;
 
+  @Field({ description: 'Enable doc embedding' })
+  enableDocEmbedding!: boolean;
+
   @Field(() => [InviteUserType], {
     description: 'Members of workspace',
   })
@@ -133,7 +136,7 @@ export class InvitationType {
 @InputType()
 export class UpdateWorkspaceInput extends PickType(
   PartialType(WorkspaceType),
-  ['public', 'enableAi', 'enableUrlPreview'],
+  ['public', 'enableAi', 'enableUrlPreview', 'enableDocEmbedding'],
   InputType
 ) {
   @Field(() => ID)

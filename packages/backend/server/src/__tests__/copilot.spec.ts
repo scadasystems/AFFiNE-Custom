@@ -24,9 +24,10 @@ import {
   CopilotProviderType,
   OpenAIProvider,
 } from '../plugins/copilot/providers';
-import { CitationParser } from '../plugins/copilot/providers/perplexity';
+import { CitationParser } from '../plugins/copilot/providers/utils';
 import { ChatSessionService } from '../plugins/copilot/session';
 import { CopilotStorage } from '../plugins/copilot/storage';
+import { CopilotTranscriptionService } from '../plugins/copilot/transcript';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -57,6 +58,7 @@ const test = ava as TestFn<{
   event: EventBus;
   context: CopilotContextService;
   prompt: PromptService;
+  transcript: CopilotTranscriptionService;
   factory: CopilotProviderFactory;
   session: ChatSessionService;
   jobs: CopilotContextDocJob;
@@ -100,25 +102,30 @@ test.before(async t => {
   const auth = module.get(AuthService);
   const db = module.get(PrismaClient);
   const event = module.get(EventBus);
-  const context = module.get(CopilotContextService);
   const prompt = module.get(PromptService);
   const factory = module.get(CopilotProviderFactory);
+
   const session = module.get(ChatSessionService);
   const workflow = module.get(CopilotWorkflowService);
-  const jobs = module.get(CopilotContextDocJob);
   const storage = module.get(CopilotStorage);
+
+  const context = module.get(CopilotContextService);
+  const jobs = module.get(CopilotContextDocJob);
+  const transcript = module.get(CopilotTranscriptionService);
 
   t.context.module = module;
   t.context.auth = auth;
   t.context.db = db;
   t.context.event = event;
-  t.context.context = context;
   t.context.prompt = prompt;
   t.context.factory = factory;
   t.context.session = session;
   t.context.workflow = workflow;
-  t.context.jobs = jobs;
   t.context.storage = storage;
+  t.context.context = context;
+  t.context.jobs = jobs;
+  t.context.transcript = transcript;
+
   t.context.executors = {
     image: module.get(CopilotChatImageExecutor),
     text: module.get(CopilotChatTextExecutor),

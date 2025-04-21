@@ -1,5 +1,6 @@
 import { test } from '@affine-test/kit/playwright';
 import {
+  assertTitle,
   clickEdgelessModeButton,
   clickView,
   createEdgelessNoteBlock,
@@ -162,7 +163,7 @@ test.describe('edgeless page block', () => {
     const note = page.locator('affine-edgeless-note');
     const docTitle = note.locator('edgeless-page-block-title');
     await expect(docTitle).toBeVisible();
-    await expect(docTitle).toHaveText(title);
+    await assertTitle(page, title);
 
     await note.dblclick();
     await docTitle.click();
@@ -170,11 +171,11 @@ test.describe('edgeless page block', () => {
     // clear the title
     await selectAllByKeyboard(page);
     await pressBackspace(page);
-    await expect(docTitle).toHaveText('');
+    await assertTitle(page, '');
 
     // type new title
     await type(page, 'New Title');
-    await expect(docTitle).toHaveText('New Title');
+    await assertTitle(page, 'New Title');
 
     // cursor could move between doc title and note content
     await page.keyboard.press('ArrowDown');
@@ -186,10 +187,10 @@ test.describe('edgeless page block', () => {
 
     await page.keyboard.press('ArrowUp');
     await type(page, 'yy');
-    await expect(docTitle).toHaveText('yyNew Title');
+    await assertTitle(page, 'yyNew Title');
 
     await pressEnter(page);
-    await expect(docTitle).toHaveText('yy');
+    await assertTitle(page, 'yy');
     await expect(paragraphs).toHaveCount(numParagraphs + 1);
     await expect(paragraphs.nth(0)).toHaveText('New Title');
     await expect(paragraphs.nth(1)).toHaveText('xxHello');
@@ -424,4 +425,43 @@ test.describe('note block rendering', () => {
       'should show collapsed content when dragging is finished'
     ).toHaveCSS('overflow-y', 'visible');
   });
+});
+
+test('should convert note block to linked doc when clicking turn into linked doc button', async ({
+  page,
+}) => {
+  await createEdgelessNoteBlock(page, [100, 100]);
+  await page.keyboard.type('Is this the real life?');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Is this just fantasy?');
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+
+  const note = page.locator('affine-edgeless-note', {
+    hasText: 'Is this just fantasy?',
+  });
+  await note.click();
+  const toolbar = locateToolbar(page);
+  const moreBtn = toolbar.getByRole('button', { name: 'More' });
+  await moreBtn.click();
+  const turnIntoLinkedDocBtn = toolbar.getByRole('button', {
+    name: 'Turn into linked doc',
+  });
+  await turnIntoLinkedDocBtn.click();
+  await page.keyboard.type('Bohemian Rhapsody');
+
+  const confirmBtn = page.getByTestId('confirm-modal-confirm');
+  await confirmBtn.click();
+
+  const syncedDoc = page.locator('affine-embed-edgeless-synced-doc-block');
+  await expect(syncedDoc).toBeVisible();
+
+  const noteInSyncedDoc = syncedDoc.locator('affine-note');
+  await expect(noteInSyncedDoc).toBeVisible();
+
+  const paragraphs = noteInSyncedDoc.locator('affine-paragraph');
+  await expect(paragraphs.first()).toContainText('Is this the real life?');
+  await expect(paragraphs.last()).toContainText('Is this just fantasy?');
 });

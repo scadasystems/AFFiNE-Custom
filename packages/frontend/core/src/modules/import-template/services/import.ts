@@ -1,5 +1,5 @@
-import { ZipTransformer } from '@blocksuite/affine/blocks/root';
 import type { DocMode } from '@blocksuite/affine/model';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
 
 import { DocsService } from '../../doc';

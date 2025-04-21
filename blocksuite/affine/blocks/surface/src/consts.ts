@@ -17,8 +17,12 @@ export interface IModelCoord {
   y: number;
 }
 
+// TODO(@L-Sun): we should remove this list when refactor the pointerOut event to pointerLeave,
+// since the previous will be triggered when the pointer move to the area of the its children elements
+// see: https://developer.mozilla.org/en-US/docs/Web/API/Element/pointerout_event
 export const EXCLUDING_MOUSE_OUT_CLASS_LIST = [
   'affine-note-mask',
   'edgeless-block-portal-note',
   'affine-block-children-container',
+  'edgeless-container',
 ];

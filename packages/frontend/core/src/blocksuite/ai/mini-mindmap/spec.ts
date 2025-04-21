@@ -1,3 +1,4 @@
+import { EdgelessElementRendererExtension } from '@blocksuite/affine/blocks/root';
 import { SurfaceBlockSchema } from '@blocksuite/affine/blocks/surface';
 import { MindMapView } from '@blocksuite/affine/gfx/mindmap';
 import { RootBlockSchema } from '@blocksuite/affine/model';
@@ -23,6 +24,7 @@ export const MiniMindmapSpecs: ExtensionType[] = [
   MindMapView,
   MindmapSurfaceBlockService,
   BlockViewExtension('affine:surface', literal`mini-mindmap-surface-block`),
+  ...EdgelessElementRendererExtension,
 ];
 
 export const MiniMindmapSchema: z.infer<typeof BlockSchema>[] = [

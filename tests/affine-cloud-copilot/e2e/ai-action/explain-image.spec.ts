@@ -1,4 +1,3 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
@@ -13,15 +12,13 @@ const image = {
 };
 
 test.describe('AIAction/ExplainImage', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should support explaining the selected image', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { explainImage } = await utils.editor.askAIWithImage(page, image);
@@ -30,7 +27,10 @@ test.describe('AIAction/ExplainImage', () => {
     expect(responses).toEqual(new Set(['insert-below', 'replace-selection']));
   });
 
-  test('should show chat history in chat panel', async ({ page, utils }) => {
+  test('should show chat history in chat panel', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { explainImage } = await utils.editor.askAIWithImage(page, image);
     const { answer } = await explainImage();
     const insertBelow = answer.getByTestId('answer-insert-below');

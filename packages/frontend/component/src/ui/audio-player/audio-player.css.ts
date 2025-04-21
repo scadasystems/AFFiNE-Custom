@@ -149,6 +149,13 @@ export const timeDisplay = style({
   },
 });
 
+export const playbackRateDisplay = style({
+  fontSize: cssVar('fontXs'),
+  fontWeight: 500,
+  color: cssVarV2('text/secondary'),
+  cursor: 'pointer',
+});
+
 export const miniRoot = style({
   position: 'relative',
   display: 'flex',

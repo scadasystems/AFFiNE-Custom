@@ -57,3 +57,28 @@ test('should exit drawing tools menu when Escape is pressed', async ({
 
   await expect(drawingToolsMenu).toBeHidden();
 });
+
+test('should enter highlighter tool when `Shift + P` is pressed', async ({
+  page,
+}) => {
+  const drawingToolButton = page.locator('.edgeless-pen-button');
+  const drawingToolsMenu = page.locator('edgeless-pen-menu');
+
+  await expect(drawingToolButton).toHaveAttribute('data-drawing-tool', 'brush');
+  await expect(drawingToolsMenu).toBeHidden();
+
+  await page.keyboard.press('Shift+P');
+
+  await expect(drawingToolButton).toHaveAttribute(
+    'data-drawing-tool',
+    'highlighter'
+  );
+  await expect(drawingToolsMenu).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(drawingToolsMenu).toBeHidden();
+  await expect(drawingToolButton).toHaveAttribute(
+    'data-drawing-tool',
+    'highlighter'
+  );
+});

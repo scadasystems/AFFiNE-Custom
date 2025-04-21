@@ -1,17 +1,17 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIChatWith/Text', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should support stop generating', async ({ page, utils }) => {
+  test('should support stop generating', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.editor.askAIWithText(page, 'Appel');
     await page.getByTestId('action-fix-grammar').click();
     await expect(page.getByTestId('ai-generating')).toBeVisible();
@@ -20,7 +20,7 @@ test.describe('AIChatWith/Text', () => {
     await expect(page.getByTestId('ai-generating')).not.toBeVisible();
   });
 
-  test('should support copy answer', async ({ page, utils }) => {
+  test('should support copy answer', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
     const { answer } = await translate('German');
     await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
@@ -33,7 +33,7 @@ test.describe('AIChatWith/Text', () => {
     expect(clipboardText).toBe('Apfel');
   });
 
-  test('should support insert below', async ({ page, utils }) => {
+  test('should support insert below', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
     const { answer } = await translate('German');
     await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
@@ -43,7 +43,7 @@ test.describe('AIChatWith/Text', () => {
     expect(content).toBe('Apple\nApfel');
   });
 
-  test('should support insert above', async ({ page, utils }) => {
+  test('should support insert above', async ({ loggedInPage: page, utils }) => {
     const { generateHeadings } = await utils.editor.askAIWithText(
       page,
       'AFFiNE'
@@ -58,7 +58,10 @@ test.describe('AIChatWith/Text', () => {
     expect(content).toBe('AFFiNE\nAFFiNE');
   });
 
-  test('should support replace selection', async ({ page, utils }) => {
+  test('should support replace selection', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
     const { answer } = await translate('German');
     await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
@@ -68,7 +71,10 @@ test.describe('AIChatWith/Text', () => {
     expect(content).toBe('Apfel');
   });
 
-  test('should support continue in chat', async ({ page, utils }) => {
+  test('should support continue in chat', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
     const { answer } = await translate('German');
     await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
@@ -79,7 +85,7 @@ test.describe('AIChatWith/Text', () => {
     await expect(quote).toHaveText(/Apple/, { timeout: 10000 });
   });
 
-  test('should support regenerate', async ({ page, utils }) => {
+  test('should support regenerate', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
     const { answer } = await translate('German');
     const regenerate = answer.getByTestId('answer-regenerate');
@@ -88,14 +94,20 @@ test.describe('AIChatWith/Text', () => {
     expect(content).toBe('Apple');
   });
 
-  test('should show error when request failed', async ({ page, utils }) => {
+  test('should show error when request failed', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await page.route('**/graphql', route => route.abort('failed'));
     await utils.editor.askAIWithText(page, 'Appel');
     await page.getByTestId('action-fix-spelling').click();
     await expect(page.getByTestId('ai-error')).toBeVisible();
   });
 
-  test('should support retry when error', async ({ page, utils }) => {
+  test('should support retry when error', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await page.route('**/graphql', route => route.abort('failed'));
     await utils.editor.askAIWithText(page, 'Appel');
     await page.getByTestId('action-fix-spelling').click();
@@ -107,7 +119,7 @@ test.describe('AIChatWith/Text', () => {
     await expect(answer).toHaveText(/Apple/, { timeout: 10000 });
   });
 
-  test('should support discard', async ({ page, utils }) => {
+  test('should support discard', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
     const { answer } = await translate('German');
     const discard = answer.getByTestId('answer-discard');
@@ -117,7 +129,10 @@ test.describe('AIChatWith/Text', () => {
     expect(content).toBe('Apple');
   });
 
-  test('should support discard when click outside', async ({ page, utils }) => {
+  test('should support discard when click outside', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
     const { answer } = await translate('German');
     await page.mouse.click(0, 0);
@@ -128,7 +143,7 @@ test.describe('AIChatWith/Text', () => {
     expect(content).toBe('Apple');
   });
 
-  test('should focus on textarea', async ({ page, utils }) => {
+  test('should focus on textarea', async ({ loggedInPage: page, utils }) => {
     await utils.editor.askAIWithText(page, 'Apple');
 
     const textarea = await utils.editor.whatAreYourThoughts(page, 'Coffee');

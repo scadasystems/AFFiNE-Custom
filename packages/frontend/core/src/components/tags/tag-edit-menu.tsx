@@ -131,8 +131,10 @@ const MobileTagEditMenu = ({
   const [localTag, setLocalTag] = useState({ ...tag });
 
   useEffect(() => {
-    setLocalTag({ ...tag });
-  }, [tag]);
+    if (localTag.value !== tag.value) {
+      setLocalTag({ ...tag });
+    }
+  }, [tag, localTag.value]);
 
   const handleTriggerClick: MouseEventHandler<HTMLDivElement> = useCallback(
     e => {
@@ -210,7 +212,9 @@ const MobileTagEditMenu = ({
           </ConfigModal.Row>
         </ConfigModal.RowGroup>
       </ConfigModal>
-      <div onClick={handleTriggerClick}>{children}</div>
+      <div onClick={handleTriggerClick} className={styles.mobileTagEditTrigger}>
+        {children}
+      </div>
     </>
   );
 };

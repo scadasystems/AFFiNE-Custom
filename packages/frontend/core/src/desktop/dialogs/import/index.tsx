@@ -12,14 +12,14 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
+import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
+import type { Workspace } from '@blocksuite/affine/store';
 import {
   HtmlTransformer,
   MarkdownTransformer,
   NotionHtmlTransformer,
   ZipTransformer,
-} from '@blocksuite/affine/blocks/root';
-import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
-import type { Workspace } from '@blocksuite/affine/store';
+} from '@blocksuite/affine/widgets/linked-doc';
 import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
@@ -241,6 +241,7 @@ const ImportOptionItem = ({
   suffixTooltip,
   type,
   onImport,
+  ...props
 }: {
   label: string;
   prefixIcon: ReactElement<SVGAttributes<SVGElement>>;
@@ -251,7 +252,7 @@ const ImportOptionItem = ({
 }) => {
   const t = useI18n();
   return (
-    <div className={style.importItem} onClick={() => onImport(type)}>
+    <div className={style.importItem} onClick={() => onImport(type)} {...props}>
       {prefixIcon}
       <div className={style.importItemLabel}>{t[label]()}</div>
       {suffixIcon && (
@@ -292,9 +293,9 @@ const ImportOptions = ({
               suffixIcon={suffixIcon}
               suffixTooltip={suffixTooltip}
               label={label}
-              data-testid={testId}
               type={type}
               onImport={onImport}
+              data-testid={testId}
             />
           )
         )}

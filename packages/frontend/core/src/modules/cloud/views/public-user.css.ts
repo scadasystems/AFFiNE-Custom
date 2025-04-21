@@ -2,6 +2,8 @@ import { style } from '@vanilla-extract/css';
 
 export const publicUserLabel = style({
   fontSize: 'inherit',
+  display: 'flex',
+  alignItems: 'center',
 });
 
 export const publicUserLabelLoading = style([
@@ -18,3 +20,7 @@ export const publicUserLabelRemoved = style([
     textDecoration: 'line-through',
   },
 ]);
+
+export const publicUserLabelAvatar = style({
+  marginRight: '0.5em',
+});

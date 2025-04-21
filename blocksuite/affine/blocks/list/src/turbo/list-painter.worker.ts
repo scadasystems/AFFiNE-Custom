@@ -77,10 +77,15 @@ class ListLayoutPainter implements BlockLayoutPainter {
       return;
     }
 
-    if (!isListLayout(layout)) return;
+    if (!isListLayout(layout)) {
+      console.warn(
+        'Expected list layout but received different format:',
+        layout
+      );
+      return;
+    }
 
     const renderedPositions = new Set<string>();
-
     layout.items.forEach(item => {
       const fontSize = item.fontSize;
       const baselineY = getBaseline(fontSize);

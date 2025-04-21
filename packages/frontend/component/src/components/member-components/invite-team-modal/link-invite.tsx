@@ -111,24 +111,42 @@ export const LinkInvite = ({
     });
   }, [revokeInvitationLink]);
 
+  const expireTime = useMemo(() => {
+    return t['com.affine.payment.member.team.invite.expire-at']({
+      expireTime: invitationLink?.expireTime
+        ? new Date(invitationLink.expireTime).toLocaleString()
+        : '',
+    });
+  }, [invitationLink, t]);
+
   return (
     <>
       <div className={styles.invitationLinkContainer}>
         <div className={styles.modalSubTitle}>
           {t['com.affine.payment.member.team.invite.link-expiration']()}
         </div>
-        <Menu
-          items={items}
-          contentOptions={{
-            style: {
-              width: 'var(--radix-dropdown-menu-trigger-width)',
-            },
-          }}
-        >
-          <MenuTrigger style={{ width: '100%' }}>
-            {currentSelectedLabel}
-          </MenuTrigger>
-        </Menu>
+        {invitationLink ? (
+          <Input
+            value={expireTime}
+            disabled
+            style={{
+              backgroundColor: cssVarV2('input/background'),
+            }}
+          />
+        ) : (
+          <Menu
+            items={items}
+            contentOptions={{
+              style: {
+                width: 'var(--radix-dropdown-menu-trigger-width)',
+              },
+            }}
+          >
+            <MenuTrigger style={{ width: '100%' }}>
+              {currentSelectedLabel}
+            </MenuTrigger>
+          </Menu>
+        )}
       </div>
       <div className={styles.invitationLinkContainer}>
         <div className={styles.modalSubTitle}>

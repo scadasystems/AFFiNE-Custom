@@ -1,6 +1,5 @@
 import { LiveData, Service } from '@toeverything/infra';
 import { setElementVars } from '@vanilla-extract/dynamic';
-import { distinctUntilChanged, scan } from 'rxjs';
 
 import { globalVars } from '../../../styles/variables.css';
 import type { VirtualKeyboardProvider } from '../providers/virtual-keyboard';
@@ -8,6 +7,8 @@ import type { VirtualKeyboardProvider } from '../providers/virtual-keyboard';
 export class VirtualKeyboardService extends Service {
   readonly visible$ = new LiveData(false);
   readonly height$ = new LiveData(0);
+
+  staticHeight = 0;
 
   constructor(
     private readonly virtualKeyboardProvider: VirtualKeyboardProvider
@@ -21,22 +22,18 @@ export class VirtualKeyboardService extends Service {
       this.virtualKeyboardProvider.onChange(info => {
         this.visible$.next(info.visible);
         this.height$.next(info.height);
+
+        setElementVars(document.body, {
+          [globalVars.appKeyboardHeight]: `${this.height$.value}px`,
+        });
+
+        if (info.visible && this.staticHeight !== info.height) {
+          this.staticHeight = info.height;
+          setElementVars(document.body, {
+            [globalVars.appKeyboardStaticHeight]: `${this.staticHeight}px`,
+          });
+        }
       })
     );
-
-    // record the static keyboard height to css var
-    const subscription = this.height$
-      .pipe(
-        scan((lastHeight, currentHeight) =>
-          this.visible$.value ? currentHeight : lastHeight
-        ),
-        distinctUntilChanged()
-      )
-      .subscribe(height => {
-        setElementVars(document.body, {
-          [globalVars.appKeyboardHeight]: `${height}px`,
-        });
-      });
-    this.disposables.push(() => subscription.unsubscribe());
   }
 }

@@ -15,7 +15,7 @@ import {
   type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
-import { ZipTransformer } from '@blocksuite/affine/blocks/root';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import {
   FrameworkScope,
   LiveData,

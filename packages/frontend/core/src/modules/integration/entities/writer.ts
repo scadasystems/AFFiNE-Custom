@@ -1,4 +1,4 @@
-import { MarkdownTransformer } from '@blocksuite/affine/blocks/root';
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Entity } from '@toeverything/infra';
 
 import type { TagService } from '../../tag';

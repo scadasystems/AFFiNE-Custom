@@ -101,22 +101,22 @@ test('should find updates by spaceId and docId', async t => {
     {
       spaceId: workspace.id,
       docId,
-      blob: Buffer.from('blob1'),
+      blob: Uint8Array.from([1, 2, 3]),
       timestamp: Date.now(),
       editorId: user.id,
     },
     {
       spaceId: workspace.id,
       docId,
-      blob: Buffer.from('blob2'),
+      blob: Uint8Array.from([4, 5, 6]),
       timestamp: Date.now() + 1000,
       editorId: user.id,
     },
   ]);
   const foundUpdates = await t.context.doc.findUpdates(workspace.id, docId);
   t.is(foundUpdates.length, 2);
-  t.deepEqual(foundUpdates[0].blob, Buffer.from('blob1'));
-  t.deepEqual(foundUpdates[1].blob, Buffer.from('blob2'));
+  t.deepEqual(foundUpdates[0].blob, Uint8Array.from([1, 2, 3]));
+  t.deepEqual(foundUpdates[1].blob, Uint8Array.from([4, 5, 6]));
 
   let count = await t.context.doc.getUpdateCount(workspace.id, docId);
   t.is(count, 2);
@@ -199,7 +199,7 @@ test('should upsert a doc', async t => {
   const snapshot = {
     spaceId: workspace.id,
     docId: randomUUID(),
-    blob: Buffer.from('blob1'),
+    blob: Uint8Array.from([1, 2, 3]),
     timestamp: Date.now(),
     editorId: user.id,
   };

@@ -187,15 +187,17 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
     }
 
-    this.event.emit('workspace.subscription.canceled', {
-      workspaceId,
-      plan: lookupKey.plan,
-      recurring: lookupKey.recurring,
-    });
-
-    await this.db.subscription.deleteMany({
+    const result = await this.db.subscription.deleteMany({
       where: { stripeSubscriptionId: stripeSubscription.id },
     });
+
+    if (result.count > 0) {
+      this.event.emit('workspace.subscription.canceled', {
+        workspaceId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+      });
+    }
   }
 
   getSubscription(identity: z.infer<typeof WorkspaceSubscriptionIdentity>) {

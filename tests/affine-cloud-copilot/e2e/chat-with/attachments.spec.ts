@@ -1,18 +1,18 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIChatWith/Attachments', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('support chat with attachment', async ({ page, utils }) => {
-    const textContent = 'EEee is a cute cat';
+  test('support chat with attachment', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    const textContent = 'AttachmentEEee is a cute cat';
     const buffer = Buffer.from(textContent);
 
     await utils.chatPanel.chatWithAttachments(
@@ -24,13 +24,13 @@ test.describe('AIChatWith/Attachments', () => {
           buffer: buffer,
         },
       ],
-      'What is EEee?'
+      'What is AttachmentEEee?'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is EEee?',
+        content: 'What is AttachmentEEee?',
       },
       {
         role: 'assistant',
@@ -44,9 +44,12 @@ test.describe('AIChatWith/Attachments', () => {
     }).toPass({ timeout: 10000 });
   });
 
-  test('support chat with multiple attachments', async ({ page, utils }) => {
-    const textContent1 = 'EEee is a cute cat';
-    const textContent2 = 'FFff is a cute dog';
+  test('support chat with multiple attachments', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    const textContent1 = 'AttachmentEEee is a cute cat';
+    const textContent2 = 'AttachmentFFff is a cute dog';
     const buffer1 = Buffer.from(textContent1);
     const buffer2 = Buffer.from(textContent2);
 
@@ -64,13 +67,13 @@ test.describe('AIChatWith/Attachments', () => {
           buffer: buffer2,
         },
       ],
-      'What is EEee? What is FFff?'
+      'What is AttachmentEEee? What is AttachmentFFff?'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is EEee? What is FFff?',
+        content: 'What is AttachmentEEee? What is AttachmentFFff?',
       },
       {
         role: 'assistant',
@@ -81,8 +84,8 @@ test.describe('AIChatWith/Attachments', () => {
     await expect(async () => {
       const { content, message } =
         await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(/EEee/);
-      expect(content).toMatch(/FFff/);
+      expect(content).toMatch(/AttachmentEEee/);
+      expect(content).toMatch(/AttachmentFFff/);
       expect(await message.locator('affine-footnote-node').count()).toBe(2);
     }).toPass({ timeout: 20000 });
   });

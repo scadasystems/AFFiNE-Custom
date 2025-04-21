@@ -1,4 +1,3 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type { GfxModel } from '@blocksuite/std/gfx';
 import { expect } from '@playwright/test';
@@ -6,15 +5,13 @@ import { expect } from '@playwright/test';
 import { test } from '../base/base-test';
 
 test.describe('AIChatWith/EdgelessMindMap', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should support replace mindmap with the regenerated one', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     let id: string;

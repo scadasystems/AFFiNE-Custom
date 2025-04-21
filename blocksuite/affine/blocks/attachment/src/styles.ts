@@ -98,11 +98,6 @@ export const styles = css`
     justify-content: center;
   }
 
-  .affine-attachment-banner svg {
-    width: 40px;
-    height: 40px;
-  }
-
   .affine-attachment-card.loading {
     background: var(--affine-background-secondary-color);
 
@@ -135,5 +130,10 @@ export const styles = css`
     position: relative;
     width: 100%;
     height: 100%;
+  }
+
+  .affine-attachment-embed-event-mask {
+    position: absolute;
+    inset: 0;
   }
 `;

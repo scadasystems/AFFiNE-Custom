@@ -163,7 +163,10 @@ module.exports = {
 
             // parse 'file' fields
             const containsFile = node.variableDefinitions.some(def => {
-              const varType = def?.type?.type?.name?.value;
+              const varType =
+                def.type.kind === 'NamedType'
+                  ? def.type.name.value
+                  : def?.type?.type?.name?.value;
               const checkContainFile = type => {
                 if (schema.getType(type)?.name === 'Upload') return true;
                 const typeDef = schema.getType(type);

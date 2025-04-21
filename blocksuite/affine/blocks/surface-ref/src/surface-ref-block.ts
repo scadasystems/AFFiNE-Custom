@@ -49,7 +49,7 @@ import {
 import type { BaseSelection, Store } from '@blocksuite/store';
 import { effect, signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
-import { query, state } from 'lit/decorators.js';
+import { query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { guard } from 'lit/directives/guard.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -103,17 +103,12 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       margin: 0 auto;
       position: relative;
       overflow: hidden;
-      pointer-events: none;
       user-select: none;
     }
 
     .ref-viewport-event-mask {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: auto;
+      inset: 0;
     }
   `;
 
@@ -139,11 +134,11 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     return this._referencedModel;
   }
 
-  private _focusBlock() {
+  private readonly _handleClick = () => {
     this.selection.update(() => {
       return [this.selection.create(BlockSelection, { blockId: this.blockId })];
     });
-  }
+  };
 
   private _initHotkey() {
     const selection = this.host.selection;
@@ -178,7 +173,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     this.bindHotKey({
       Enter: () => {
-        if (!this._focused) return;
+        if (!this.selected$.value) return;
         addParagraph();
         return true;
       },
@@ -258,17 +253,6 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         })
       );
     }
-  }
-
-  private _initSelection() {
-    const selection = this.host.selection;
-    this._disposables.add(
-      selection.slots.changed.subscribe(selList => {
-        this._focused = selList.some(
-          sel => sel.blockId === this.blockId && sel.is(BlockSelection)
-        );
-      })
-    );
   }
 
   private _initViewport() {
@@ -436,7 +420,6 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     this._initHotkey();
     this._initViewport();
     this._initReferencedModel();
-    this._initSelection();
   }
 
   override firstUpdated() {
@@ -462,10 +445,10 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       <div
         class=${classMap({
           'affine-surface-ref': true,
-          focused: this._focused,
+          focused: this.selected$.value,
         })}
         data-theme=${edgelessTheme}
-        @click=${this._focusBlock}
+        @click=${this._handleClick}
       >
         ${content}
       </div>
@@ -487,9 +470,6 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     this.std.get(EditPropsStore).setStorage('viewport', viewport);
     this.std.get(DocModeProvider).setEditorMode('edgeless');
   }
-
-  @state()
-  private accessor _focused: boolean = false;
 
   @query('.affine-surface-ref')
   accessor hoverableContainer!: HTMLDivElement;

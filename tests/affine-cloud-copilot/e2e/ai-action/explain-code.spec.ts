@@ -1,17 +1,14 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIAction/ExplainCode', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should support explain code', async ({ page, utils }) => {
+  test('should support explain code', async ({ loggedInPage: page, utils }) => {
     const { explainCode } = await utils.editor.askAIWithCode(
       page,
       'console.log("Hello, World!");',
@@ -21,7 +18,10 @@ test.describe('AIAction/ExplainCode', () => {
     await expect(answer).toHaveText(/console.log/);
   });
 
-  test('should show chat history in chat panel', async ({ page, utils }) => {
+  test('should show chat history in chat panel', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { explainCode } = await utils.editor.askAIWithCode(
       page,
       'console.log("Hello, World!");',

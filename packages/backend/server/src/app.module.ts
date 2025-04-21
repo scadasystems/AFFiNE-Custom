@@ -183,7 +183,7 @@ export function buildAppModule(env: Env) {
     // doc service only
     .useIf(() => env.flavors.doc, DocServiceModule)
     // self hosted server only
-    .useIf(() => env.selfhosted, WorkerModule, SelfhostModule)
+    .useIf(() => env.dev || env.selfhosted, WorkerModule, SelfhostModule)
 
     // gcloud
     .useIf(() => env.gcp, GCloudModule);

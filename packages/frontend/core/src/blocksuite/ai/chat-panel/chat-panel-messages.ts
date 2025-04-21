@@ -235,7 +235,10 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         @scroll=${() => this._debouncedOnScroll()}
       >
         ${filteredItems.length === 0
-          ? html`<div class="messages-placeholder">
+          ? html`<div
+              class="messages-placeholder"
+              data-testid="chat-panel-messages-placeholder"
+            >
               ${AffineIcon(
                 isLoading
                   ? 'var(--affine-icon-secondary)'

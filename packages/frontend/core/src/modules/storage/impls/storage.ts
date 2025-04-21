@@ -1,4 +1,5 @@
 import type { Memento } from '@toeverything/infra';
+import EventEmitter2 from 'eventemitter2';
 import { Observable } from 'rxjs';
 
 import type {
@@ -8,6 +9,10 @@ import type {
 } from '../providers/global';
 
 export class StorageMemento implements Memento {
+  // eventEmitter is used for same tab event
+  private readonly eventEmitter = new EventEmitter2();
+  // channel is used for cross-tab event
+  private readonly channel = new BroadcastChannel(this.prefix);
   constructor(
     private readonly storage: Storage,
     private readonly prefix: string
@@ -34,20 +39,27 @@ export class StorageMemento implements Memento {
       const first = json ? JSON.parse(json) : undefined;
       subscriber.next(first);
 
-      const channel = new BroadcastChannel(this.prefix + key);
-      channel.addEventListener('message', event => {
-        subscriber.next(event.data);
-      });
+      const eventEmitterCb = (value: T) => {
+        subscriber.next(value);
+      };
+      this.eventEmitter.on(key, eventEmitterCb);
+
+      const channelCb = (event: MessageEvent) => {
+        if (event.data.key === key) {
+          subscriber.next(event.data.value);
+        }
+      };
+      this.channel.addEventListener('message', channelCb);
       return () => {
-        channel.close();
+        this.eventEmitter.off(key, eventEmitterCb);
+        this.channel.removeEventListener('message', channelCb);
       };
     });
   }
   set<T>(key: string, value: T): void {
     this.storage.setItem(this.prefix + key, JSON.stringify(value));
-    const channel = new BroadcastChannel(this.prefix + key);
-    channel.postMessage(value);
-    channel.close();
+    this.eventEmitter.emit(key, value);
+    this.channel.postMessage({ key, value });
   }
 
   del(key: string): void {

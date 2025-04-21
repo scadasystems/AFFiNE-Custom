@@ -1,19 +1,16 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { focusDocTitle } from '@affine-test/kit/utils/editor';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIInsertion/Insert', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should insert content below selected block in page mode', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     // Create tow blocks
@@ -53,7 +50,7 @@ test.describe('AIInsertion/Insert', () => {
   });
 
   test('should insert content below selected block in edgeless mode', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.editor.switchToEdgelessMode(page);
@@ -92,7 +89,7 @@ test.describe('AIInsertion/Insert', () => {
   });
 
   test('should insert content at the end of the page when no block is selected', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     // Create tow blocks
@@ -132,7 +129,7 @@ test.describe('AIInsertion/Insert', () => {
   });
 
   test('should insert content at the end of the note when no block is selected in edgeless mode', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.editor.switchToEdgelessMode(page);
@@ -166,7 +163,7 @@ test.describe('AIInsertion/Insert', () => {
   });
 
   test('should create a new note when no block or note is selected in edgeless mode', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.editor.switchToEdgelessMode(page);

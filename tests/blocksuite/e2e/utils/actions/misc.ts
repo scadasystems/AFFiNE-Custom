@@ -14,6 +14,7 @@ import { expect } from '@playwright/test';
 import stringify from 'json-stable-stringify';
 import lz from 'lz-string';
 
+import { ZERO_WIDTH_FOR_EMPTY_LINE } from '../inline-editor.js';
 import { currentEditorIndex } from '../multiple-editor.js';
 import {
   pressArrowRight,
@@ -150,6 +151,8 @@ export async function enterPlaygroundRoom(
         'Running frontend commit',
         // Github timeout:
         'Failed to load resource: the server responded with a status of 403',
+        // font download warning:
+        '[JavaScript Warning: "downloadable font:',
       ].some(text => message.text().startsWith(text))
     ) {
       return;
@@ -1053,7 +1056,7 @@ export async function getIndexCoordinate(
 }
 
 export function inlineEditorInnerTextToString(innerText: string): string {
-  return innerText.replace('\u200B', '').trim();
+  return innerText.replace(ZERO_WIDTH_FOR_EMPTY_LINE, '').trim();
 }
 
 export async function focusTitle(page: Page) {

@@ -448,11 +448,10 @@ export class ChatPanelChips extends SignalWatcher(
       if (!contextId || !AIProvider.context) {
         throw new Error('Context not found');
       }
-      const collection = this._collections.value.find(
-        collection => collection.id === chip.collectionId
-      );
       // TODO: server side docIds calculation
-      const docIds = collection?.allowList ?? [];
+      const docIds = this.docDisplayConfig.getCollectionPageIds(
+        chip.collectionId
+      );
       await AIProvider.context.addContextCollection({
         contextId,
         collectionId: chip.collectionId,

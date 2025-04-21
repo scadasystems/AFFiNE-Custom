@@ -6,7 +6,7 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { truncate } from 'lodash-es';
-import { EMPTY, map, mergeMap, of, switchMap } from 'rxjs';
+import { EMPTY, map, mergeMap, of, switchMap, throttleTime } from 'rxjs';
 
 import type { DocRecord, DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
@@ -50,6 +50,10 @@ export class DocsQuickSearchSession
   items$ = new LiveData<QuickSearchItem<'docs', DocsPayload>[]>([]);
 
   query = effect(
+    throttleTime<string>(1000, undefined, {
+      leading: false,
+      trailing: true,
+    }),
     switchMap((query: string) => {
       let out;
       if (!query) {

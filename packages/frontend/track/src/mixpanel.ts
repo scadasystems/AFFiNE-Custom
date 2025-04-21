@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type { OverridedMixpanel } from 'mixpanel-browser';
+import type { Dict, OverridedMixpanel } from 'mixpanel-browser';
 import mixpanelBrowser from 'mixpanel-browser';
 
 const logger = new DebugLogger('mixpanel');
@@ -30,14 +30,19 @@ function createMixpanel() {
 
   const wrapped = {
     init() {
-      mixpanel.register({
+      const defaultProps = {
         appVersion: BUILD_CONFIG.appVersion,
         environment: BUILD_CONFIG.appBuildType,
         editorVersion: BUILD_CONFIG.editorVersion,
         isDesktop: BUILD_CONFIG.isElectron,
-        isSelfHosted: environment.isSelfHosted,
         distribution: BUILD_CONFIG.distribution,
-      });
+      };
+      this.register(defaultProps);
+    },
+    // provide a way to override the default properties
+    register(props: Dict) {
+      logger.debug('register with', props);
+      mixpanel.register(props);
     },
     reset() {
       mixpanel.reset();

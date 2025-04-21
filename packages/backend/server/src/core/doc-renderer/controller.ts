@@ -5,7 +5,7 @@ import { Controller, Get, Logger, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import isMobile from 'is-mobile';
 
-import { metrics } from '../../base';
+import { Config, metrics } from '../../base';
 import { Models } from '../../models';
 import { htmlSanitize } from '../../native';
 import { Public } from '../auth';
@@ -51,7 +51,8 @@ export class DocRendererController {
 
   constructor(
     private readonly doc: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly config: Config
   ) {
     this.webAssets = this.readHtmlAssets(join(env.projectRoot, 'static'));
     this.mobileAssets = this.readHtmlAssets(
@@ -140,6 +141,7 @@ export class DocRendererController {
     // TODO(@forehalo): how can we enable the type reference to @affine/env
     const envMeta: Record<string, any> = {
       publicPath: assets.publicPath,
+      subPath: this.config.server.path,
       renderer: 'ssr',
     };
 

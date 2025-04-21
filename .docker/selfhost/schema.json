@@ -200,11 +200,6 @@
       "type": "object",
       "description": "Configuration for mailer module",
       "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Whether enabled mail service.\n@default false",
-          "default": false
-        },
         "SMTP.host": {
           "type": "string",
           "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"\n@environment `MAILER_HOST`",

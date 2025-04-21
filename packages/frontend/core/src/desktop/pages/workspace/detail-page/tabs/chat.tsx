@@ -1,6 +1,5 @@
 import { ChatPanel } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
-import { enableFootnoteConfigExtension } from '@affine/core/blocksuite/extensions';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
@@ -70,9 +69,8 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       chatPanelRef.current.docDisplayConfig = docDisplayConfig;
       chatPanelRef.current.searchMenuConfig = searchMenuConfig;
       chatPanelRef.current.networkSearchConfig = networkSearchConfig;
-      chatPanelRef.current.previewSpecBuilder = enableFootnoteConfigExtension(
-        SpecProvider._.getSpec('preview:page')
-      );
+      chatPanelRef.current.previewSpecBuilder =
+        SpecProvider._.getSpec('preview:page');
 
       containerRef.current?.append(chatPanelRef.current);
     } else {

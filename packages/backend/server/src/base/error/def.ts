@@ -275,6 +275,10 @@ export const USER_FRIENDLY_ERRORS = {
     args: { message: 'string' },
     message: ({ message }) => `HTTP request error, message: ${message}`,
   },
+  email_service_not_configured: {
+    type: 'internal_server_error',
+    message: 'Email service is not configured.',
+  },
 
   // Input errors
   query_too_long: {
@@ -697,6 +701,10 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ contextId, content, message }) =>
       `Failed to match context ${contextId} with "${escape(content)}": ${message}`,
   },
+  copilot_embedding_disabled: {
+    type: 'action_forbidden',
+    message: `Embedding feature is disabled, please contact the administrator to enable it in the workspace settings.`,
+  },
   copilot_embedding_unavailable: {
     type: 'action_forbidden',
     message: `Embedding feature not available, you may need to install pgvector extension to your database`,
@@ -708,6 +716,10 @@ export const USER_FRIENDLY_ERRORS = {
   copilot_transcription_job_not_found: {
     type: 'bad_request',
     message: () => `Transcription job not found.`,
+  },
+  copilot_transcription_audio_not_provided: {
+    type: 'bad_request',
+    message: () => `Audio not provided.`,
   },
 
   // Quota & Limit errors

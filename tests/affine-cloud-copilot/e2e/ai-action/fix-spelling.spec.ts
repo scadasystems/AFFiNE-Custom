@@ -1,18 +1,15 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIAction/FixSpelling', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should support fixing spelling errors in the selected content', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { fixSpelling } = await utils.editor.askAIWithText(page, 'Appel');
@@ -22,7 +19,7 @@ test.describe('AIAction/FixSpelling', () => {
   });
 
   test('should support fixing spelling errors in the selected text block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { fixSpelling } = await utils.editor.askAIWithEdgeless(
@@ -38,7 +35,7 @@ test.describe('AIAction/FixSpelling', () => {
   });
 
   test('should support fixing spelling errors in the selected note block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { fixSpelling } = await utils.editor.askAIWithEdgeless(
@@ -53,7 +50,10 @@ test.describe('AIAction/FixSpelling', () => {
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
-  test('should show chat history in chat panel', async ({ page, utils }) => {
+  test('should show chat history in chat panel', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { fixSpelling } = await utils.editor.askAIWithText(page, 'Appel');
     const { answer } = await fixSpelling();
     await expect(answer).toHaveText(/Apple/, { timeout: 10000 });

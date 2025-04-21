@@ -1,7 +1,4 @@
-import {
-  createRandomAIUser,
-  enableCloudWorkspace,
-} from '@affine-test/kit/utils/cloud';
+import { createRandomAIUser } from '@affine-test/kit/utils/cloud';
 import { openHomePage, setCoreUrl } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
@@ -55,13 +52,14 @@ export class TestUtils {
     };
   }
 
-  public async setupTestEnvironment(page: Page, enableCloud: boolean = true) {
-    await openHomePage(page);
+  public async createNewPage(page: Page) {
     await clickNewPageButton(page);
     await waitForEditorLoad(page);
-    if (enableCloud) {
-      await enableCloudWorkspace(page);
-    }
+  }
+
+  public async setupTestEnvironment(page: Page) {
+    await openHomePage(page);
+    await this.createNewPage(page);
   }
 
   public async createTestWorkspace(page: Page, name: string = 'test') {

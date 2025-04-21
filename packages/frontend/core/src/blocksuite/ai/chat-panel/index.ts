@@ -400,7 +400,7 @@ export class ChatPanel extends SignalWatcher(
         .createSessionId=${this._createSessionId}
         .updateContext=${this.updateContext}
         .host=${this.host}
-        .isLoading=${this.isLoading || !this._isInitialized}
+        .isLoading=${this.isLoading}
         .previewSpecBuilder=${this.previewSpecBuilder}
       ></chat-panel-messages>
       <ai-chat-composer
@@ -408,7 +408,6 @@ export class ChatPanel extends SignalWatcher(
         .doc=${this.doc}
         .getSessionId=${this._getSessionId}
         .createSessionId=${this._createSessionId}
-        .createChatSessionId=${this._createSessionId}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
         .updateEmbeddingProgress=${this._updateEmbeddingProgress}

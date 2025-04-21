@@ -17,6 +17,7 @@ import { firstValueFrom, map, race } from 'rxjs';
 import type { AIChatBlockModel } from '../../../blocksuite/ai/blocks';
 import { resolveLinkToDoc } from '../../navigation';
 import type { WorkbenchService } from '../../workbench';
+import type { ImagePreviewData } from '../view/image-preview';
 
 export type DocReferenceInfo = {
   docId: string;
@@ -49,6 +50,11 @@ export interface DocPeekViewInfo {
   docRef: DocReferenceInfo;
 }
 
+export type ImageListPeekViewInfo = {
+  type: 'image-list';
+  data: ImagePreviewData;
+};
+
 export type ImagePeekViewInfo = {
   type: 'image';
   docRef: DocReferenceInfo;
@@ -78,7 +84,8 @@ export type ActivePeekView = {
     | ImagePeekViewInfo
     | AttachmentPeekViewInfo
     | CustomTemplatePeekViewInfo
-    | AIChatBlockPeekViewInfo;
+    | AIChatBlockPeekViewInfo
+    | ImageListPeekViewInfo;
 };
 
 const isEmbedLinkedDocModel = (
@@ -241,11 +248,21 @@ export class PeekViewEntity extends Entity {
 
   // return true if the peek view will be handled
   open = async (
-    target: ActivePeekView['target'],
+    targetOrInfo: ActivePeekView['target'] | ActivePeekView['info'],
     template?: TemplateResult,
     abortSignal?: AbortSignal
   ) => {
-    const resolvedInfo = resolvePeekInfoFromPeekTarget(target, template);
+    let target: ActivePeekView['target'];
+    let resolvedInfo: ActivePeekView['info'] | undefined;
+
+    if ('type' in targetOrInfo) {
+      resolvedInfo = targetOrInfo;
+      target = {};
+    } else {
+      target = targetOrInfo;
+      resolvedInfo = resolvePeekInfoFromPeekTarget(target, template);
+    }
+
     if (!resolvedInfo) {
       return;
     }

@@ -1,13 +1,19 @@
 import { expect } from '@playwright/test';
 
+import { clickView } from '../utils/actions/click.js';
 import {
   addBasicRectShapeElement,
+  getSelectedBoundCount,
   locatorComponentToolbar,
   resizeElementByHandle,
   selectNoteInEdgeless,
   switchEditorMode,
   zoomResetByKeyboard,
 } from '../utils/actions/edgeless.js';
+import {
+  pressBackspace,
+  selectAllBlocksByKeyboard,
+} from '../utils/actions/keyboard.js';
 import {
   enterPlaygroundRoom,
   initEmptyEdgelessState,
@@ -86,4 +92,27 @@ test('should be hidden when resizing element', async ({ page }) => {
   );
 
   await expect(toolbar).toBeVisible();
+});
+
+test('should only one tool active at the same time when using shortcut to switch tool', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+  await clickView(page, [0, 0]);
+  await selectAllBlocksByKeyboard(page);
+  await pressBackspace(page);
+
+  await page.keyboard.press('s');
+  await page.keyboard.press('m');
+  await page.keyboard.press('n');
+
+  await clickView(page, [100, 100]);
+  await clickView(page, [0, 0]); // click on empty space to deselect the note
+  await selectAllBlocksByKeyboard(page);
+  expect(
+    await getSelectedBoundCount(page),
+    'only a note should be created'
+  ).toBe(1);
 });

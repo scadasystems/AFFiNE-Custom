@@ -28,7 +28,7 @@ export class EditorUtils {
       const lines = await page.$$('page-editor .inline-editor');
       const contents = await Promise.all(lines.map(el => el.innerText()));
       content = contents
-        .map(c => c.replace(/\u200B/g, '').trim())
+        .map(c => c.replace(/[\u200B-\u200D\uFEFF]/g, '').trim())
         .filter(c => !!c)
         .join('\n');
       if (!content) {
@@ -43,7 +43,9 @@ export class EditorUtils {
     const edgelessNode = await page.waitForSelector(
       'affine-edgeless-note .edgeless-note-page-content'
     );
-    return (await edgelessNode.innerText()).replace(/\u200B/g, '').trim();
+    return (await edgelessNode.innerText())
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .trim();
   }
 
   public static async switchToEdgelessMode(page: Page) {
@@ -180,7 +182,7 @@ export class EditorUtils {
     });
 
     // Insert text inside shape
-    await page.mouse.dblclick(400, 400);
+    await page.mouse.dblclick(450, 450);
     await page.keyboard.insertText(text);
     // Prevent the shape from being dragged
     await page.mouse.click(500, 500);
@@ -236,6 +238,50 @@ export class EditorUtils {
     );
   }
 
+  public static async clearAllCollections(page: Page) {
+    while (true) {
+      const collection = await page
+        .getByTestId('explorer-collections')
+        .locator('[data-testid^="explorer-collection-"]')
+        .first();
+
+      if (!(await collection.isVisible())) {
+        break;
+      }
+
+      const collectionContent = await collection.locator('div').first();
+      await collectionContent.hover();
+      const more = await collectionContent.getByTestId(
+        'explorer-tree-node-operation-button'
+      );
+      await more.click();
+      await page.getByTestId('collection-delete-button').click();
+    }
+    await page.waitForTimeout(100);
+  }
+
+  public static async clearAllTags(page: Page) {
+    while (true) {
+      const tag = await page
+        .getByTestId('explorer-tags')
+        .locator('[data-testid^="explorer-tag-"]')
+        .first();
+
+      if (!(await tag.isVisible())) {
+        break;
+      }
+
+      const tagContent = await tag.locator('div').first();
+      await tagContent.hover();
+      const more = await tagContent.getByTestId(
+        'explorer-tree-node-operation-button'
+      );
+      await more.click();
+      await page.getByTestId('tag-delete-button').click();
+    }
+    await page.waitForTimeout(100);
+  }
+
   public static async createCollectionAndDoc(
     page: Page,
     collectionName: string,
@@ -273,7 +319,8 @@ export class EditorUtils {
   ) {
     // Create tag
     const tags = await page.getByTestId('explorer-tags');
-    await tags.getByTestId('explorer-bar-add-favorite-button').click();
+    await tags.hover();
+    await tags.getByTestId('explorer-bar-add-tag-button').click();
     const input = await page.getByTestId('rename-modal-input');
     await input.focus();
     await input.pressSequentially(tagName);

@@ -1,18 +1,15 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIChatWith/Network', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should support chat with network if network search enabled', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.chatPanel.enableNetworkSearch(page);
@@ -40,7 +37,7 @@ test.describe('AIChatWith/Network', () => {
   });
 
   test('should disable chat with image if network search enabled', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.chatPanel.enableNetworkSearch(page);
@@ -49,7 +46,10 @@ test.describe('AIChatWith/Network', () => {
     expect(isImageUploadEnabled).toBe(false);
   });
 
-  test('should prevent network search if disabled', async ({ page, utils }) => {
+  test('should prevent network search if disabled', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.chatPanel.disableNetworkSearch(page);
     await utils.chatPanel.makeChat(
       page,
@@ -74,7 +74,7 @@ test.describe('AIChatWith/Network', () => {
   });
 
   test('should disable network search when chating with image', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const image =

@@ -1,5 +1,6 @@
 // eslint-disable no-empty-pattern
 import { test as base } from '@affine-test/kit/playwright';
+import type { Page } from '@playwright/test';
 
 import { ChatPanelUtils } from '../utils/chat-panel-utils';
 import { EditorUtils } from '../utils/editor-utils';
@@ -11,6 +12,7 @@ interface TestUtilsFixtures {
     chatPanel: typeof ChatPanelUtils;
     editor: typeof EditorUtils;
   };
+  loggedInPage: Page;
 }
 
 export const test = base.extend<TestUtilsFixtures>({
@@ -21,6 +23,14 @@ export const test = base.extend<TestUtilsFixtures>({
       chatPanel: ChatPanelUtils,
       editor: EditorUtils,
     });
+  },
+  loggedInPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: 'storageState.json',
+    });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
   },
 });
 

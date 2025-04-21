@@ -3,17 +3,11 @@ import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
+import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor/blocksuite-editor';
 import { EditorService } from '@affine/core/modules/editor';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace/global-schema';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import {
-  createAssetsArchive,
-  download,
-  HtmlTransformer,
-  MarkdownTransformer,
-  ZipTransformer,
-} from '@blocksuite/affine/blocks/root';
 import { ExportManager } from '@blocksuite/affine/blocks/surface';
 import {
   docLinkBaseURLMiddleware,
@@ -25,11 +19,17 @@ import {
 import { printToPdf } from '@blocksuite/affine/shared/utils';
 import type { BlockStdScope } from '@blocksuite/affine/std';
 import { type Store, Transformer } from '@blocksuite/affine/store';
+import {
+  createAssetsArchive,
+  download,
+  HtmlTransformer,
+  MarkdownTransformer,
+  ZipTransformer,
+} from '@blocksuite/affine/widgets/linked-doc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 
-import type { AffineEditorContainer } from '../../../blocksuite/block-suite-editor/blocksuite-editor-container';
 import { useAsyncCallback } from '../affine-async-hooks';
 
 type ExportType = 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot';

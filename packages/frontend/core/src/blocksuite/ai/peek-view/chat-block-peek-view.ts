@@ -141,14 +141,10 @@ export class AIChatBlockPeekView extends LitElement {
   };
 
   private readonly _getSessionId = async () => {
-    return this._sessionId;
+    return this._forkSessionId ?? this._sessionId;
   };
 
   private readonly _createSessionId = async () => {
-    return this._sessionId;
-  };
-
-  private readonly _createForkSessionId = async () => {
     if (this._forkSessionId) {
       return this._forkSessionId;
     }
@@ -506,7 +502,6 @@ export class AIChatBlockPeekView extends LitElement {
         .doc=${this.host.doc}
         .getSessionId=${this._getSessionId}
         .createSessionId=${this._createSessionId}
-        .createChatSessionId=${this._createForkSessionId}
         .chatContextValue=${chatContext}
         .updateContext=${updateContext}
         .onHistoryCleared=${this._onHistoryCleared}

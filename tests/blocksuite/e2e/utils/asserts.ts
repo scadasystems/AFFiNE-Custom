@@ -962,7 +962,7 @@ export async function assertEdgelessColorSameWithHexColor(
   edgelessColor: string,
   hexColor: `#${string}`
 ) {
-  const themeColor = edgelessColor.startsWith('---')
+  const themeColor = edgelessColor.startsWith('--')
     ? await getCurrentThemeCSSPropertyValue(page, edgelessColor)
     : edgelessColor;
   expect(themeColor).toBeTruthy();

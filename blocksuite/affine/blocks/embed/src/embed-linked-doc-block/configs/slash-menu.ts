@@ -1,8 +1,5 @@
 import { EmbedLinkedDocBlockSchema } from '@blocksuite/affine-model';
-import {
-  getInlineEditorByModel,
-  insertContent,
-} from '@blocksuite/affine-rich-text';
+import { insertContent } from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import { createDefaultDoc } from '@blocksuite/affine-shared/utils';
 import {
@@ -68,22 +65,7 @@ const linkedDocSlashMenuConfig: SlashMenuConfig = {
         if (!linkedDocWidget) return;
         // TODO(@L-Sun): make linked-doc-widget as extension
         // @ts-expect-error same as above
-        const triggerKey = linkedDocWidget.config.triggerKeys[0];
-
-        insertContent(std, model, triggerKey);
-
-        const inlineEditor = getInlineEditorByModel(std, model);
-        if (inlineEditor) {
-          // Wait for range to be updated
-          const subscription = inlineEditor.slots.inlineRangeSync.subscribe(
-            () => {
-              // TODO(@L-Sun): make linked-doc-widget as extension
-              subscription.unsubscribe();
-              // @ts-expect-error same as above
-              linkedDocWidget.show({ addTriggerKey: true });
-            }
-          );
-        }
+        linkedDocWidget.show({ addTriggerKey: true });
       },
     },
   ],

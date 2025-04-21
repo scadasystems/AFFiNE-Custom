@@ -493,10 +493,7 @@ const MiddleClickPasteSettings = () => {
   const settings = useLiveData(editorSettingService.editorSetting.settings$);
   const onToggleMiddleClickPaste = useCallback(
     (checked: boolean) => {
-      editorSettingService.editorSetting.set(
-        'disableMiddleClickPaste',
-        checked
-      );
+      editorSettingService.editorSetting.set('enableMiddleClickPaste', checked);
     },
     [editorSettingService.editorSetting]
   );
@@ -510,7 +507,7 @@ const MiddleClickPasteSettings = () => {
       ]()}
     >
       <Switch
-        checked={settings.disableMiddleClickPaste}
+        checked={settings.enableMiddleClickPaste}
         onChange={onToggleMiddleClickPaste}
       />
     </SettingRow>

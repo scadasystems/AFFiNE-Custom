@@ -23,7 +23,7 @@ declare global {
 defineModuleConfig('server', {
   name: {
     desc: 'A recognizable name for the server. Will be shown when connected with AFFiNE Desktop.',
-    default: 'AFFiNE Cloud',
+    default: '',
   },
   externalUrl: {
     desc: `Base url of AFFiNE server, used for generating external urls.
@@ -57,7 +57,7 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
     env: ['AFFINE_SERVER_PORT', 'integer'],
   },
   path: {
-    desc: 'Subpath where the server get deployed if there is.',
+    desc: 'Subpath where the server get deployed if there is one.(e.g. /affine)',
     default: '',
     env: 'AFFINE_SERVER_SUB_PATH',
   },

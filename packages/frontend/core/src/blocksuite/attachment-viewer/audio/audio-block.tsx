@@ -27,7 +27,6 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
   const audioMedia = block.audioMedia;
   const playbackState = useLiveData(audioMedia.playbackState$);
   const stats = useLiveData(audioMedia.stats$);
-  const loading = useLiveData(audioMedia.loading$);
   const expanded = useLiveData(block.expanded$);
   const [preflightChecking, setPreflightChecking] = useState(false);
   const transcribing =
@@ -55,6 +54,13 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
   const handleSeek = useCallback(
     (time: number) => {
       audioMedia?.seekTo(time);
+    },
+    [audioMedia]
+  );
+
+  const handlePlaybackRateChange = useCallback(
+    (rate: number) => {
+      audioMedia?.setPlaybackRate(rate);
     },
     [audioMedia]
   );
@@ -184,7 +190,7 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     <AudioPlayer
       name={block.props.props.name}
       size={sizeEntry}
-      loading={loading}
+      loading={stats.duration === 0}
       playbackState={playbackState?.state || 'idle'}
       waveform={stats.waveform}
       seekTime={seekTime}
@@ -194,6 +200,8 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
       onPause={handlePause}
       onStop={handleStop}
       onSeek={handleSeek}
+      playbackRate={playbackState?.playbackRate || 1.0}
+      onPlaybackRateChange={handlePlaybackRateChange}
       notesEntry={
         <CurrentServerScopeProvider>{notesEntry}</CurrentServerScopeProvider>
       }

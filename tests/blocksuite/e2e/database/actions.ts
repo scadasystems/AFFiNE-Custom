@@ -12,7 +12,7 @@ import {
   getEditorLocator,
   waitNextFrame,
 } from '../utils/actions/misc.js';
-import { ZERO_WIDTH_SPACE } from '../utils/inline-editor.js';
+import { ZERO_WIDTH_FOR_EMPTY_LINE } from '../utils/inline-editor.js';
 
 export async function press(page: Page, content: string) {
   await page.keyboard.press(content, { delay: 50 });
@@ -95,7 +95,7 @@ export async function assertDatabaseTitleColumnText(
   const text = await selectCell1.innerText();
 
   if (title === '') {
-    expect(text).toMatch(new RegExp(`^(|[${ZERO_WIDTH_SPACE}])$`));
+    expect(text).toMatch(new RegExp(`^(|[${ZERO_WIDTH_FOR_EMPTY_LINE}])$`));
   } else {
     expect(text).toBe(title);
   }

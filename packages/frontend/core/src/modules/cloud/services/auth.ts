@@ -1,4 +1,3 @@
-import { AIProvider } from '@affine/core/blocksuite/ai';
 import { UserFriendlyError } from '@affine/error';
 import type { OAuthProviderType } from '@affine/graphql';
 import { track } from '@affine/track';
@@ -8,23 +7,13 @@ import { distinctUntilChanged, map, skip } from 'rxjs';
 
 import { ApplicationFocused } from '../../lifecycle';
 import type { UrlService } from '../../url';
-import { type AuthAccountInfo, AuthSession } from '../entities/session';
+import { AuthSession } from '../entities/session';
 import { AccountChanged } from '../events/account-changed';
 import { AccountLoggedIn } from '../events/account-logged-in';
 import { AccountLoggedOut } from '../events/account-logged-out';
 import { ServerStarted } from '../events/server-started';
 import type { AuthStore } from '../stores/auth';
 import type { FetchService } from './fetch';
-
-function toAIUserInfo(account: AuthAccountInfo | null) {
-  if (!account) return null;
-  return {
-    avatarUrl: account.avatar ?? '',
-    email: account.email ?? '',
-    id: account.id,
-    name: account.label,
-  };
-}
 
 @OnEvent(ApplicationFocused, e => e.onApplicationFocused)
 @OnEvent(ServerStarted, e => e.onServerStarted)
@@ -38,11 +27,6 @@ export class AuthService extends Service {
   ) {
     super();
 
-    // TODO(@forehalo): make AIProvider a standalone service passed to AI elements by props
-    AIProvider.provide('userInfo', () => {
-      return toAIUserInfo(this.session.account$.value);
-    });
-
     this.session.account$
       .pipe(
         map(a => ({
@@ -53,8 +37,6 @@ export class AuthService extends Service {
         skip(1) // skip the initial value
       )
       .subscribe(({ account }) => {
-        AIProvider.slots.userInfo.next(toAIUserInfo(account));
-
         if (account === null) {
           this.eventBus.emit(AccountLoggedOut, account);
         } else {

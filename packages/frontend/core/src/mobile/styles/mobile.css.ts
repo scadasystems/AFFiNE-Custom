@@ -21,7 +21,7 @@ globalStyle('body:has(>#app-tabs):not(:has(affine-keyboard-toolbar))', {
   paddingBottom: globalVars.appTabSafeArea,
 });
 globalStyle('body:has(affine-keyboard-toolbar)', {
-  paddingBottom: `calc(${globalVars.appKeyboardHeight} + 46px)`,
+  paddingBottom: `calc(${globalVars.appKeyboardStaticHeight} + 46px)`,
 });
 globalStyle('body:has(>#app-tabs) affine-keyboard-tool-panel', {
   paddingBottom: `calc(${globalVars.appTabSafeArea} + 8px)`,

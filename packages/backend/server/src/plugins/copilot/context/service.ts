@@ -1,5 +1,4 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import OpenAI from 'openai';
 
 import {
   Cache,
@@ -46,7 +45,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private setup() {
     const configure = this.config.copilot.providers.openai;
     if (configure.apiKey) {
-      this.client = new OpenAIEmbeddingClient(new OpenAI(configure));
+      this.client = new OpenAIEmbeddingClient(configure);
     }
   }
 

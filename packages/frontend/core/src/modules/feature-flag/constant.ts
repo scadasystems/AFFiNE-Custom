@@ -195,7 +195,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.description',
     configurable: false,
-    defaultState: isDesktopEnvironment,
+    defaultState: isDesktopEnvironment || BUILD_CONFIG.isIOS,
   },
   enable_mobile_edgeless_editing: {
     category: 'affine',
@@ -259,6 +259,15 @@ export const AFFINE_FLAGS = {
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1358384103925350542',
     defaultState: false,
+  },
+  // TODO(@L-Sun): remove this flag after the feature is released
+  enable_embed_doc_with_alias: {
+    category: 'blocksuite',
+    bsFlag: 'enable_embed_doc_with_alias',
+    displayName: 'Embed doc with alias',
+    description: 'Embed doc with alias',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
   },
 } satisfies { [key in string]: FlagInfo };
 

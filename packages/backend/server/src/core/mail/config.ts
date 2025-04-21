@@ -3,7 +3,6 @@ import { defineModuleConfig } from '../../base';
 declare global {
   interface AppConfigSchema {
     mailer: {
-      enabled: boolean;
       SMTP: {
         host: string;
         port: number;
@@ -17,10 +16,6 @@ declare global {
 }
 
 defineModuleConfig('mailer', {
-  enabled: {
-    desc: 'Whether enabled mail service.',
-    default: false,
-  },
   'SMTP.host': {
     desc: 'Host of the email server (e.g. smtp.gmail.com)',
     default: '',
@@ -49,6 +44,6 @@ defineModuleConfig('mailer', {
   'SMTP.ignoreTLS': {
     desc: "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
     default: false,
-    env: 'MAILER_IGNORE_TLS',
+    env: ['MAILER_IGNORE_TLS', 'boolean'],
   },
 });

@@ -10,6 +10,7 @@ export const useSeekTime = (
         state: AudioMediaPlaybackState;
         seekOffset: number;
         updateTime: number;
+        playbackRate: number;
       }
     | undefined
     | null,
@@ -24,7 +25,8 @@ export const useSeekTime = (
       if (playbackState) {
         const timeElapsed =
           playbackState.state === 'playing'
-            ? (Date.now() - playbackState.updateTime) / 1000
+            ? ((Date.now() - playbackState.updateTime) / 1000) *
+              (playbackState.playbackRate ?? 1.0)
             : 0;
         // if timeElapsed + playbackState.seekOffset is close to duration,
         // set seekTime to duration

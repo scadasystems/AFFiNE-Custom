@@ -10,6 +10,7 @@ import {
   type SearchOptions,
   type SearchResult,
 } from '../../../storage';
+import { shallowEqual } from '../../../utils/shallow-equal';
 import type { DocStorageSchema } from '../schema';
 import { highlighter } from './highlighter';
 import {
@@ -32,6 +33,8 @@ export type DataStructROTransaction = IDBPTransaction<
   ArrayLike<StoreNames<DocStorageSchema>>,
   'readonly' | 'readwrite'
 >;
+
+let debugMarkCount = 0;
 
 export class DataStruct {
   database: IDBPDatabase<DocStorageSchema> = null as any;
@@ -82,6 +85,7 @@ export class DataStruct {
     table: keyof IndexerSchema,
     document: IndexerDocument
   ) {
+    using _ = await this.measure(`update`);
     const existsNid = await trx
       .objectStore('indexerRecords')
       .index('id')
@@ -119,6 +123,7 @@ export class DataStruct {
         if (!iidx) {
           continue;
         }
+        using _ = await this.measure(`insert[${typeInfo.type}]`);
         await iidx.insert(trx, nid, values);
       }
     }
@@ -129,6 +134,7 @@ export class DataStruct {
     table: keyof IndexerSchema,
     document: IndexerDocument
   ) {
+    using _ = await this.measure(`insert`);
     const existsNid = await trx
       .objectStore('indexerRecords')
       .index('id')
@@ -160,6 +166,7 @@ export class DataStruct {
         if (!iidx) {
           continue;
         }
+        using _ = await this.measure(`insert[${typeInfo.type}]`);
         await iidx.insert(trx, nid, values);
       }
     }
@@ -183,6 +190,7 @@ export class DataStruct {
     table: keyof IndexerSchema,
     id: string
   ) {
+    using _ = await this.measure(`delete`);
     const nid = await trx
       .objectStore('indexerRecords')
       .index('id')
@@ -195,11 +203,12 @@ export class DataStruct {
     }
   }
 
-  async deleteByQuery(
+  private async deleteByQuery(
     trx: DataStructRWTransaction,
     table: keyof IndexerSchema,
     query: Query<any>
   ) {
+    using _ = await this.measure(`deleteByQuery`);
     const match = await this.queryRaw(trx, table, query);
 
     for (const nid of match.scores.keys()) {
@@ -215,6 +224,7 @@ export class DataStruct {
     inserts: IndexerDocument<any>[],
     updates: IndexerDocument<any>[]
   ) {
+    using _ = await this.measure(`batchWrite`);
     for (const query of deleteByQueries) {
       await this.deleteByQuery(trx, table, query);
     }
@@ -248,8 +258,14 @@ export class DataStruct {
   async queryRaw(
     trx: DataStructROTransaction,
     table: keyof IndexerSchema,
-    query: Query<any>
+    query: Query<any>,
+    cache: QueryCache = new QueryCache()
   ): Promise<Match> {
+    const cached = cache.get(query);
+    if (cached) {
+      return cached;
+    }
+    using _ = await this.measure(`query[${query.type}]`);
     if (query.type === 'match') {
       const iidx = this.invertedIndex.get(table)?.get(query.field as string);
       if (!iidx) {
@@ -259,7 +275,7 @@ export class DataStruct {
     } else if (query.type === 'boolean') {
       const weights = [];
       for (const q of query.queries) {
-        weights.push(await this.queryRaw(trx, table, q));
+        weights.push(await this.queryRaw(trx, table, q, cache));
       }
       if (query.occur === 'must') {
         return weights.reduce((acc, w) => acc.and(w));
@@ -272,7 +288,9 @@ export class DataStruct {
     } else if (query.type === 'all') {
       return await this.matchAll(trx, table);
     } else if (query.type === 'boost') {
-      return (await this.queryRaw(trx, table, query.query)).boost(query.boost);
+      return (await this.queryRaw(trx, table, query.query, cache)).boost(
+        query.boost
+      );
     } else if (query.type === 'exists') {
       const iidx = this.invertedIndex.get(table)?.get(query.field as string);
       if (!iidx) {
@@ -489,5 +507,31 @@ export class DataStruct {
     }
 
     return node;
+  }
+
+  async measure(name: string) {
+    const count = debugMarkCount++;
+    performance.mark(`${name}Start(${count})`);
+    return {
+      [Symbol.dispose]: () => {
+        performance.mark(`${name}End(${count})`);
+        performance.measure(
+          `${name}`,
+          `${name}Start(${count})`,
+          `${name}End(${count})`
+        );
+      },
+    };
+  }
+}
+class QueryCache {
+  private readonly cache: [Query<any>, Match][] = [];
+
+  get(query: Query<any>) {
+    return this.cache.find(q => shallowEqual(q[0], query))?.[1];
+  }
+
+  set(query: Query<any>, match: Match) {
+    this.cache.push([query, match]);
   }
 }

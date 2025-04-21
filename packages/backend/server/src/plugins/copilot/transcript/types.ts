@@ -20,9 +20,17 @@ const TranscriptionItemSchema = z.object({
 
 export const TranscriptionSchema = z.array(TranscriptionItemSchema);
 
+export const AudioBlobInfosSchema = z
+  .object({
+    url: z.string(),
+    mimeType: z.string(),
+  })
+  .array();
+
 export const TranscriptPayloadSchema = z.object({
   url: z.string().nullable().optional(),
   mimeType: z.string().nullable().optional(),
+  infos: AudioBlobInfosSchema.nullable().optional(),
   title: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
   transcription: TranscriptionSchema.nullable().optional(),
@@ -31,6 +39,8 @@ export const TranscriptPayloadSchema = z.object({
 export type TranscriptionItem = z.infer<typeof TranscriptionItemSchema>;
 export type Transcription = z.infer<typeof TranscriptionSchema>;
 export type TranscriptionPayload = z.infer<typeof TranscriptPayloadSchema>;
+
+export type AudioBlobInfos = z.infer<typeof AudioBlobInfosSchema>;
 
 declare global {
   interface Events {
@@ -44,8 +54,11 @@ declare global {
   interface Jobs {
     'copilot.transcript.submit': {
       jobId: string;
-      url: string;
-      mimeType: string;
+      infos?: AudioBlobInfos;
+      /// @deprecated use `infos` instead
+      url?: string;
+      /// @deprecated use `infos` instead
+      mimeType?: string;
     };
     'copilot.transcript.summary.submit': {
       jobId: string;

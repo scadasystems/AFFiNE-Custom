@@ -1,4 +1,3 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
@@ -13,14 +12,15 @@ const image = {
 };
 
 test.describe('AIChatWith/Image', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should support use the generated caption', async ({ page, utils }) => {
+  test('should support use the generated caption', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { generateCaption } = await utils.editor.askAIWithImage(page, image);
     const { answer } = await generateCaption();
     await expect(answer).toHaveText(/cat|kitten/i);

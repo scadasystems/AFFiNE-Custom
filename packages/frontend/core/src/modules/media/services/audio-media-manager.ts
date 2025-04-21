@@ -231,6 +231,24 @@ export class AudioMediaManagerService extends Service {
     });
   }
 
+  /**
+   * Sets the playback rate (speed) for the current audio
+   * @param rate The playback rate (0.5 to 4.0)
+   */
+  setPlaybackRate(rate: number) {
+    const state = this.getGlobalPlaybackState();
+    if (!state) {
+      return;
+    }
+
+    const clamped = clamp(rate, 0.5, 4.0);
+    this.globalMediaState.updatePlaybackState({
+      ...state,
+      playbackRate: clamped,
+      updateTime: Date.now(),
+    });
+  }
+
   focusAudioMedia(key: AudioMediaKey, tabId: string | null) {
     const mediaProps = parseAudioMediaKey(key);
     if (tabId === this.currentTabId) {

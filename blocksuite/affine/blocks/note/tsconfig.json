@@ -11,6 +11,7 @@
     { "path": "../surface" },
     { "path": "../../components" },
     { "path": "../../fragments/doc-title" },
+    { "path": "../../gfx/turbo-renderer" },
     { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },

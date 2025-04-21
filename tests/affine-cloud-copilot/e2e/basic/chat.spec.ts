@@ -1,17 +1,17 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
+import { copyByKeyboard } from '@affine-test/kit/utils/keyboard';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIBasic/Chat', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ utils, loggedInPage: page }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should display empty state when no messages', async ({ page }) => {
+  test('should display empty state when no messages', async ({
+    loggedInPage: page,
+  }) => {
     // Verify empty state UI
     await expect(page.getByTestId('chat-panel-empty-state')).toBeVisible();
     await expect(page.getByTestId('ai-onboarding')).toBeVisible();
@@ -22,7 +22,7 @@ test.describe('AIBasic/Chat', () => {
         - AI is loading
         - AI generating
         - AI success
-    `, async ({ page, utils }) => {
+    `, async ({ loggedInPage: page, utils }) => {
     // Type and send a message
     await utils.chatPanel.makeChat(page, 'Introduce AFFiNE to me');
 
@@ -66,7 +66,10 @@ test.describe('AIBasic/Chat', () => {
     ]);
   });
 
-  test('should support stop generating', async ({ page, utils }) => {
+  test('should support stop generating', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.chatPanel.makeChat(page, 'Introduce AFFiNE to me');
 
     // AI Generating
@@ -95,7 +98,7 @@ test.describe('AIBasic/Chat', () => {
   });
 
   test('should render ai actions inline if the answer is the last one in the list, otherwise, nest them under the "More" menu', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.chatPanel.makeChat(page, 'Hello, how can you help me?');
@@ -140,7 +143,7 @@ test.describe('AIBasic/Chat', () => {
   });
 
   test('should show scroll indicator when there are many messages', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     // Set window height to 100px to ensure scroll indicator appears
@@ -188,7 +191,10 @@ test.describe('AIBasic/Chat', () => {
     await expect(scrollDownIndicator).not.toBeVisible();
   });
 
-  test('should show error when request failed', async ({ page, utils }) => {
+  test('should show error when request failed', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     // Simulate network error by disconnecting
     await page.route('**/graphql', route => route.abort('failed'));
 
@@ -199,7 +205,10 @@ test.describe('AIBasic/Chat', () => {
     await expect(page.getByTestId('action-retry-button')).toBeVisible();
   });
 
-  test('should support retrying failed messages', async ({ page, utils }) => {
+  test('should support retrying failed messages', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     // Simulate network error by disconnecting
     await page.route('**/graphql', route => route.abort('failed'));
 
@@ -238,7 +247,10 @@ test.describe('AIBasic/Chat', () => {
     ]);
   });
 
-  test('should support retrying question', async ({ page, utils }) => {
+  test('should support retrying question', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.chatPanel.makeChat(
       page,
       'Introduce Large Language Model in under 500 words'
@@ -282,7 +294,7 @@ test.describe('AIBasic/Chat', () => {
   });
 
   test('should support sending message with button', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.chatPanel.openChatPanel(page);
@@ -300,7 +312,10 @@ test.describe('AIBasic/Chat', () => {
     ]);
   });
 
-  test('should support clearing chat', async ({ page, utils }) => {
+  test('should support clearing chat', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.chatPanel.openChatPanel(page);
     await utils.chatPanel.makeChat(page, 'Hello');
     await utils.chatPanel.waitForHistory(page, [
@@ -316,8 +331,10 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.clearChat(page);
     await utils.chatPanel.waitForHistory(page, []);
   });
-
-  test('should support copying answer', async ({ page, utils }) => {
+  test('should support copying answer', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.chatPanel.openChatPanel(page);
     await utils.chatPanel.makeChat(page, 'Hello');
     await utils.chatPanel.waitForHistory(page, [
@@ -341,5 +358,116 @@ test.describe('AIBasic/Chat', () => {
       );
       expect(clipboardText).toBe(content);
     }).toPass({ timeout: 5000 });
+  });
+
+  test('should support copying selected answer content', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.chatPanel.openChatPanel(page);
+    await utils.chatPanel.makeChat(
+      page,
+      'Help me write a two-line love poem, return two paragraphs for me.'
+    );
+    await utils.chatPanel.waitForHistory(page, [
+      {
+        role: 'user',
+        content:
+          'Help me write a two-line love poem, return two paragraphs for me.',
+      },
+      {
+        role: 'assistant',
+        status: 'success',
+      },
+    ]);
+
+    await expect(async () => {
+      const { content, message } =
+        await utils.chatPanel.getLatestAssistantMessage(page);
+      // Select multiple rich text
+      const firstParagraph = await message
+        .locator('affine-paragraph rich-text v-text')
+        .first()
+        .boundingBox();
+      const lastParagraph = await message
+        .locator('affine-paragraph rich-text v-text')
+        .last()
+        .boundingBox();
+
+      if (firstParagraph && lastParagraph) {
+        await page.mouse.move(firstParagraph.x, firstParagraph.y);
+        await page.mouse.down();
+        await page.mouse.move(
+          lastParagraph.x + lastParagraph.width,
+          lastParagraph.y + lastParagraph.height
+        );
+        await page.mouse.up();
+      }
+
+      await copyByKeyboard(page);
+      const clipboardText = await page.evaluate(() =>
+        navigator.clipboard.readText()
+      );
+      expect(clipboardText).toBe(content);
+    }).toPass({ timeout: 5000 });
+  });
+
+  test('chat with ask ai input in page mode', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.chatPanel.closeChatPanel(page);
+    await utils.editor.askAIWithText(
+      page,
+      'AFFiNE is an open source all in one workspace.'
+    );
+    await page.keyboard.type('Translate to chinese');
+
+    const sendButton = await page.getByTestId('ai-panel-input-send');
+    await expect(sendButton).toHaveAttribute('data-active', 'true');
+    await sendButton.click();
+
+    await expect(page.getByTestId('sidebar-tab-content-chat')).toBeVisible();
+    await utils.chatPanel.waitForHistory(page, [
+      {
+        role: 'user',
+        content:
+          'AFFiNE is an open source all in one workspace.\nTranslate to chinese',
+      },
+      {
+        role: 'assistant',
+        status: 'success',
+      },
+    ]);
+  });
+
+  test('chat with ask ai input in edgeless mode', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.chatPanel.closeChatPanel(page);
+    await utils.editor.askAIWithEdgeless(page, async () => {
+      await utils.editor.createShape(page, 'HelloWorld');
+    });
+    await page.waitForTimeout(1000);
+    await page.keyboard.type('What color is it?');
+
+    await page.waitForTimeout(1000);
+    const sendButton = await page.getByTestId('ai-panel-input-send');
+    await expect(sendButton).toHaveAttribute('data-active', 'true');
+    await sendButton.click();
+
+    await expect(page.getByTestId('sidebar-tab-content-chat')).toBeVisible();
+    expect(await page.locator('chat-content-images')).toBeVisible();
+    await utils.chatPanel.waitForHistory(page, [
+      {
+        role: 'user',
+        content: 'What color is it?',
+      },
+      {
+        role: 'assistant',
+        status: 'success',
+      },
+    ]);
   });
 });

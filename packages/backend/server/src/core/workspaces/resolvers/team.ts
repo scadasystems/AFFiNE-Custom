@@ -162,7 +162,7 @@ export class TeamWorkspaceResolver {
       if (Number.isSafeInteger(expireTime)) {
         return {
           link: this.url.link(`/invite/${id.inviteId}`),
-          expireTime: new Date(Date.now() + expireTime),
+          expireTime: new Date(Date.now() + expireTime * 1000), // Convert seconds to milliseconds
         };
       }
     }
@@ -188,7 +188,7 @@ export class TeamWorkspaceResolver {
       if (Number.isSafeInteger(expireTime)) {
         return {
           link: this.url.link(`/invite/${invite.inviteId}`),
-          expireTime: new Date(Date.now() + expireTime),
+          expireTime: new Date(Date.now() + expireTime * 1000), // Convert seconds to milliseconds
         };
       }
     }

@@ -4,6 +4,14 @@ import { imageProxyBuilder } from './proxy';
 
 const localhost = new Set(['localhost', '127.0.0.1']);
 
+const URL_FIXERS: Record<string, (url: URL) => URL> = {
+  'open.spotify.com': (url: URL) => {
+    // with si query, spotify will redirect to landing page which [Open Desktop] check
+    url.searchParams.delete('si');
+    return url;
+  },
+};
+
 export function fixUrl(url?: string): URL | null {
   if (typeof url !== 'string') {
     return null;
@@ -28,6 +36,12 @@ export function fixUrl(url?: string): URL | null {
       // check hostname is a valid domain
       (fullDomain === parsed.hostname || localhost.has(parsed.hostname))
     ) {
+      const fixer = URL_FIXERS[parsed.hostname];
+
+      if (fixer) {
+        return fixer(parsed);
+      }
+
       return parsed;
     }
   } catch {}

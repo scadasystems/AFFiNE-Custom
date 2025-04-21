@@ -1,3 +1,4 @@
+import { Avatar } from '@affine/component';
 import { useCurrentServerService } from '@affine/core/components/providers/current-server-scope';
 import { useI18n } from '@affine/i18n';
 import { useLiveData } from '@toeverything/infra';
@@ -34,5 +35,15 @@ export const PublicUserLabel = ({ id }: { id: string }) => {
     );
   }
 
-  return <span className={styles.publicUserLabel}>{user?.name}</span>;
+  return (
+    <span className={styles.publicUserLabel}>
+      <Avatar
+        url={user?.avatar}
+        name={user?.name ?? ''}
+        size={20}
+        className={styles.publicUserLabelAvatar}
+      />
+      {user?.name}
+    </span>
+  );
 };

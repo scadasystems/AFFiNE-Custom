@@ -19,6 +19,7 @@ import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
+  GeminiProvider,
   OpenAIProvider,
 } from '../plugins/copilot/providers';
 import { CopilotStorage } from '../plugins/copilot/storage';
@@ -35,10 +36,12 @@ import {
   addContextDoc,
   addContextFile,
   array2sse,
+  audioTranscription,
   chatWithImages,
   chatWithText,
   chatWithTextStream,
   chatWithWorkflow,
+  claimAudioTranscription,
   cleanObject,
   createCopilotContext,
   createCopilotMessage,
@@ -50,6 +53,7 @@ import {
   matchFiles,
   matchWorkspaceDocs,
   sse2array,
+  submitAudioTranscription,
   textToEventStream,
   unsplashSearch,
   updateCopilotSession,
@@ -96,6 +100,7 @@ test.before(async t => {
         },
       });
       m.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
+      m.overrideProvider(GeminiProvider).useClass(MockCopilotProvider);
     },
   });
 
@@ -866,5 +871,79 @@ test('should be able to manage context', async t => {
     const result = (await matchWorkspaceDocs(app, contextId, 'test', 1))!;
     t.is(result.length, 1, 'should match context');
     t.is(result[0].docId, docId, 'should match doc id');
+  }
+});
+
+test('should be able to transcript', async t => {
+  const { app } = t.context;
+
+  const { id: workspaceId } = await createWorkspace(app);
+
+  Sinon.stub(app.get(GeminiProvider), 'generateText').resolves(
+    '[{"a":"A","s":30,"e":45,"t":"Hello, everyone."},{"a":"B","s":46,"e":70,"t":"Hi, thank you for joining the meeting today."}]'
+  );
+
+  {
+    const job = await submitAudioTranscription(app, workspaceId, '1', '1.mp3', [
+      Buffer.from([1, 1]),
+    ]);
+    t.snapshot(
+      cleanObject([job], ['id']),
+      'should submit audio transcription job'
+    );
+    t.truthy(job.id, 'should have job id');
+
+    // wait for processing
+    {
+      let { status } =
+        (await audioTranscription(app, workspaceId, job.id)) || {};
+
+      while (status !== 'finished') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        ({ status } =
+          (await audioTranscription(app, workspaceId, job.id)) || {});
+      }
+    }
+
+    {
+      const result = await claimAudioTranscription(app, job.id);
+      t.snapshot(
+        cleanObject([result], ['id']),
+        'should claim audio transcription job'
+      );
+    }
+  }
+
+  {
+    // sliced audio
+    const job = await submitAudioTranscription(app, workspaceId, '2', '2.mp3', [
+      Buffer.from([1, 1]),
+      Buffer.from([1, 2]),
+    ]);
+    t.snapshot(
+      cleanObject([job], ['id']),
+      'should submit audio transcription job'
+    );
+    t.truthy(job.id, 'should have job id');
+
+    // wait for processing
+    {
+      let { status } =
+        (await audioTranscription(app, workspaceId, job.id)) || {};
+
+      while (status !== 'finished') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        ({ status } =
+          (await audioTranscription(app, workspaceId, job.id)) || {});
+      }
+    }
+
+    {
+      const result = await claimAudioTranscription(app, job.id);
+      t.snapshot(
+        cleanObject([result], ['id']),
+        'should claim audio transcription job'
+      );
+    }
   }
 });

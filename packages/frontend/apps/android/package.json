@@ -6,6 +6,8 @@
   "scripts": {
     "build": "affine bundle",
     "dev": "affine bundle --dev",
+    "sync": "cap sync",
+    "sync:dev": "CAP_SERVER_URL=http://10.0.2.2:8080 cap sync",
     "studio": "cap open android"
   },
   "dependencies": {
@@ -15,7 +17,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@capacitor/android": "^7.0.0",
     "@capacitor/app": "^7.0.0",
     "@capacitor/core": "^7.0.0",
@@ -25,6 +27,8 @@
     "@capgo/inappbrowser": "^7.1.0",
     "@sentry/react": "^9.2.0",
     "@toeverything/infra": "workspace:*",
+    "async-call-rpc": "^6.4.2",
+    "idb": "^8.0.0",
     "next-themes": "^0.4.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

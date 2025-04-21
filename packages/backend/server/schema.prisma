@@ -1,5 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
+  output          = "./node_modules/.prisma/client"
   binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
   previewFeatures = ["metrics", "relationJoins", "nativeDistinct", "postgresqlExtensions"]
 }
@@ -103,14 +104,15 @@ model VerificationToken {
 }
 
 model Workspace {
-  id               String   @id @default(uuid()) @db.VarChar
-  public           Boolean
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                 String   @id @default(uuid()) @db.VarChar
+  public             Boolean
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
-  enableAi         Boolean  @default(true) @map("enable_ai")
-  enableUrlPreview Boolean  @default(false) @map("enable_url_preview")
-  name             String?  @db.VarChar
-  avatarKey        String?  @map("avatar_key") @db.VarChar
+  enableAi           Boolean  @default(true) @map("enable_ai")
+  enableUrlPreview   Boolean  @default(false) @map("enable_url_preview")
+  enableDocEmbedding Boolean  @default(true) @map("enable_doc_embedding")
+  name               String?  @db.VarChar
+  avatarKey          String?  @map("avatar_key") @db.VarChar
 
   features       WorkspaceFeature[]
   docs           WorkspaceDoc[]

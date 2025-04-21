@@ -137,7 +137,7 @@ test('should fallback to database doc reader when endpoint network error', async
 
   const doc = await docReader.getDoc(workspace.id, docId);
   t.truthy(doc);
-  t.is(doc!.bin.toString(), 'blob1 data');
+  t.is(Buffer.from(doc!.bin).toString('utf8'), 'blob1 data');
   t.is(doc!.timestamp, timestamp);
   t.is(doc!.editor, user.id);
 });

@@ -11,7 +11,13 @@ import {
   type SubscribeMessage,
   type UnsubscribeMessage,
 } from './message';
-import type { OpInput, OpNames, OpOutput, OpSchema } from './types';
+import type {
+  OpInput,
+  OpInputWithSignal,
+  OpNames,
+  OpOutput,
+  OpSchema,
+} from './types';
 
 export interface CancelablePromise<T> extends Promise<T> {
   cancel(): void;
@@ -107,10 +113,14 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
 
   call<Op extends OpNames<Ops>>(
     op: Op,
-    ...args: OpInput<Ops, Op>
+    ...args: OpInputWithSignal<Ops, Op>
   ): CancelablePromise<OpOutput<Ops, Op>> {
     const promiseWithResolvers = Promise.withResolvers<any>();
-    const payload = args[0];
+    const abortSignal =
+      args[args.length - 1] instanceof AbortSignal
+        ? (args.pop() as AbortSignal)
+        : undefined;
+    const payload = args.pop();
 
     const msg = {
       type: 'call',
@@ -121,7 +131,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
 
     const promise = promiseWithResolvers.promise as CancelablePromise<any>;
 
-    const raise = (reason: string) => {
+    const raise = (reason: any) => {
       const pending = this.pendingCalls.get(msg.id);
       if (!pending) {
         return;
@@ -130,10 +140,14 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
         type: 'cancel',
         id: msg.id,
       } satisfies CancelMessage);
-      promiseWithResolvers.reject(new Error(reason));
+      promiseWithResolvers.reject(reason);
       clearTimeout(pending.timeout);
       this.pendingCalls.delete(msg.id);
     };
+
+    abortSignal?.addEventListener('abort', () => {
+      raise(abortSignal.reason);
+    });
 
     promise.cancel = () => {
       raise('canceled');

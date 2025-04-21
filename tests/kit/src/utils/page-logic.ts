@@ -39,7 +39,7 @@ export async function waitForAllPagesLoad(page: Page) {
 export async function clickNewPageButton(page: Page, title?: string) {
   await page.getByTestId('sidebar-new-page-button').click({
     // default timeout is 5000ms, but it's not enough for the CI first page load
-    timeout: 8000,
+    timeout: 20000,
   });
   await waitForEmptyEditor(page);
   if (title) {

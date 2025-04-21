@@ -1,7 +1,8 @@
 export function getWorkerUrl(name: string) {
-  if (BUILD_CONFIG.debug && !name.endsWith('.worker.js')) {
-    throw new Error(`worker should be named with '.worker.js', get ${name}`);
-  }
-
-  return environment.workerPath + name + '?v=' + BUILD_CONFIG.appVersion;
+  return (
+    // NOTE: worker can not use publicPath because it must obey the same-origin policy
+    (environment.subPath || '/') +
+    'js/' +
+    `${name}-${BUILD_CONFIG.appVersion}.worker.js`
+  );
 }

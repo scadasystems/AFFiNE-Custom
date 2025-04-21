@@ -24,7 +24,7 @@ import {
   assertRichTextInlineDeltas,
   assertRichTextInlineRange,
 } from '../utils/asserts.js';
-import { ZERO_WIDTH_SPACE } from '../utils/inline-editor.js';
+import { ZERO_WIDTH_FOR_EMPTY_LINE } from '../utils/inline-editor.js';
 import { test } from '../utils/playwright.js';
 
 test('add inline latex at the start of line', async ({ page }) => {
@@ -162,13 +162,13 @@ test('latex editor', async ({ page }) => {
   );
 
   await pressBackspaceWithShortKey(page, 2);
-  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_SPACE);
+  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_FOR_EMPTY_LINE);
   await undoByKeyboard(page);
   expect(await latexEditorLine.innerText()).toBe(
     'ababababababababababababababababababababababababab'
   );
   await redoByKeyboard(page);
-  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_SPACE);
+  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_FOR_EMPTY_LINE);
   await undoByKeyboard(page);
   expect(await latexEditorLine.innerText()).toBe(
     'ababababababababababababababababababababababababab'
@@ -200,7 +200,7 @@ test('latex editor', async ({ page }) => {
 
   await selectAllByKeyboard(page);
   await pressBackspace(page);
-  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_SPACE);
+  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_FOR_EMPTY_LINE);
 
   // highlight
   await type(

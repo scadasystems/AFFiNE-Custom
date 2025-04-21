@@ -16,7 +16,12 @@ declare global {
 export type { Workspace };
 export type UpdateWorkspaceInput = Pick<
   Partial<Workspace>,
-  'public' | 'enableAi' | 'enableUrlPreview' | 'name' | 'avatarKey'
+  | 'public'
+  | 'enableAi'
+  | 'enableUrlPreview'
+  | 'enableDocEmbedding'
+  | 'name'
+  | 'avatarKey'
 >;
 
 @Injectable()
@@ -87,6 +92,11 @@ export class WorkspaceModel extends BaseModel {
   async allowUrlPreview(workspaceId: string) {
     const workspace = await this.get(workspaceId);
     return workspace?.enableUrlPreview ?? false;
+  }
+
+  async allowEmbedding(workspaceId: string) {
+    const workspace = await this.get(workspaceId);
+    return workspace?.enableDocEmbedding ?? false;
   }
   // #endregion
 }

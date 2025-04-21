@@ -11,6 +11,9 @@ export enum AvailableModels {
   Gpt4Omni0806 = 'gpt-4o-2024-08-06',
   Gpt4OmniMini = 'gpt-4o-mini',
   Gpt4OmniMini0718 = 'gpt-4o-mini-2024-07-18',
+  Gpt41 = 'gpt-4.1',
+  Gpt410414 = 'gpt-4.1-2025-04-14',
+  Gpt41Mini = 'gpt-4.1-mini',
   // embeddings
   TextEmbedding3Large = 'text-embedding-3-large',
   TextEmbedding3Small = 'text-embedding-3-small',

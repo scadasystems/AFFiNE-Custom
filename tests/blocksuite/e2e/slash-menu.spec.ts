@@ -841,3 +841,21 @@ test('delete block by slash menu should remove children', async ({
   await redoByKeyboard(page);
   await assertRichTexts(page, ['123']);
 });
+
+test('should slash menu can trigger linked doc popover', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyParagraphState(page);
+  await focusRichText(page);
+
+  await type(page, '/linked');
+  await pressEnter(page);
+  await expect(page.locator('.linked-doc-popover')).toBeVisible();
+  await assertRichTexts(page, ['@']);
+
+  await type(page, 'doc');
+  await pressEnter(page);
+  await expect(page.locator('affine-reference')).toBeVisible();
+  await expect(
+    page.locator('affine-reference .affine-reference-title')
+  ).toHaveText('doc');
+});

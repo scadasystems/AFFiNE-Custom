@@ -12,7 +12,6 @@ import type { IBound, IVec, IVec3 } from '@blocksuite/global/gfx';
 import {
   almostEqual,
   Bound,
-  clamp,
   getBezierCurveBoundingBox,
   getBezierParameters,
   getBoundFromPoints,
@@ -85,7 +84,7 @@ export function calculateNearestLocation(
 ) {
   const { x, y, w, h } = bounds;
   return locations
-    .map(offset => [x + offset[0] * w, y + offset[1] * h] as IVec)
+    .map<IVec>(offset => [x + offset[0] * w, y + offset[1] * h])
     .map(point => getPointFromBoundsWithRotation(bounds, point))
     .reduce(
       (prev, curr, index) => {
@@ -99,7 +98,7 @@ export function calculateNearestLocation(
         return prev;
       },
       [...locations[0]]
-    ) as IVec;
+    );
 }
 
 function rBound(ele: GfxModel, anti = false): IBound {
@@ -139,21 +138,19 @@ export function getAnchors(ele: GfxModel) {
   const anchors: { point: PointLocation; coord: IVec }[] = [];
   const rotate = ele.rotate;
 
-  [
-    [bound.center[0], bound.y - offset],
-    [bound.center[0], bound.maxY + offset],
-    [bound.x - offset, bound.center[1]],
-    [bound.maxX + offset, bound.center[1]],
-  ]
-    .map(vec =>
-      getPointFromBoundsWithRotation({ ...bound, rotate }, vec as IVec)
-    )
+  (
+    [
+      [bound.center[0], bound.y - offset],
+      [bound.center[0], bound.maxY + offset],
+      [bound.x - offset, bound.center[1]],
+      [bound.maxX + offset, bound.center[1]],
+    ] satisfies IVec[]
+  )
+    .map(vec => getPointFromBoundsWithRotation({ ...bound, rotate }, vec))
     .forEach(vec => {
-      const rst = ele.getLineIntersections(bound.center as IVec, vec as IVec);
-      if (!rst) {
-        console.error(`Failed to get line intersections for ${ele.id}`);
-        return;
-      }
+      const rst = ele.getLineIntersections(bound.center, vec);
+      if (!rst) return;
+
       const originPoint = getPointFromBoundsWithRotation(
         { ...bound, rotate: -rotate },
         rst[0]
@@ -164,7 +161,7 @@ export function getAnchors(ele: GfxModel) {
 }
 
 function getConnectableRelativePosition(connectable: GfxModel, position: IVec) {
-  const location = connectable.getRelativePointLocation(position as IVec);
+  const location = connectable.getRelativePointLocation(position);
   if (isVecZero(Vec.sub(position, [0, 0.5])))
     location.tangent = Vec.rot([0, -1], toRadian(connectable.rotate));
   else if (isVecZero(Vec.sub(position, [1, 0.5])))
@@ -184,7 +181,11 @@ export function getNearestConnectableAnchor(ele: Connectable, point: IVec) {
   );
 }
 
-function closestPoint(points: PointLocation[], point: IVec) {
+function closestPoint(
+  points: PointLocation[],
+  point: IVec
+): PointLocation | null {
+  if (points.length === 0) return null;
   const rst = points.map(p => ({ p, d: Vec.dist(p, point) }));
   rst.sort((a, b) => a.d - b.d);
   return rst[0].p;
@@ -245,7 +246,7 @@ function filterConnectablePoints<T extends IVec3 | IVec>(
 ): T[] {
   return points.filter(point => {
     if (!bound) return true;
-    return !bound.isPointInBound(point as IVec);
+    return !bound.isPointInBound([point[0], point[1]]);
   });
 }
 
@@ -368,15 +369,17 @@ function pushGapMidPoint(
       bound.lowerLine,
       bound2.upperLine,
       bound2.lowerLine,
-    ].map(line => {
-      return lineIntersects(
-        point as unknown as IVec,
-        [point[0], point[1] + 1],
-        line[0],
-        line[1],
-        true
-      ) as IVec;
-    });
+    ]
+      .map(line => {
+        return lineIntersects(
+          [point[0], point[1]],
+          [point[0], point[1] + 1],
+          line[0],
+          line[1],
+          true
+        );
+      })
+      .filter(p => p !== null);
     rst.sort((a, b) => a[1] - b[1]);
     const midPoint = Vec.lrp(rst[1], rst[2], 0.5);
     pushWithPriority(points, [midPoint], 6);
@@ -399,15 +402,17 @@ function pushGapMidPoint(
       bound.rightLine,
       bound2.leftLine,
       bound2.rightLine,
-    ].map(line => {
-      return lineIntersects(
-        point as unknown as IVec,
-        [point[0] + 1, point[1]],
-        line[0],
-        line[1],
-        true
-      ) as IVec;
-    });
+    ]
+      .map(line => {
+        return lineIntersects(
+          [point[0], point[1]],
+          [point[0] + 1, point[1]],
+          line[0],
+          line[1],
+          true
+        );
+      })
+      .filter(p => p !== null);
     rst.sort((a, b) => a[0] - b[0]);
     const midPoint = Vec.lrp(rst[1], rst[2], 0.5);
     pushWithPriority(points, [midPoint], 6);
@@ -480,14 +485,14 @@ function getConnectablePoints(
   expandEndBound: Bound | null
 ) {
   const lineBound = Bound.fromPoints([
-    startPoint,
-    endPoint,
-  ] as unknown[] as IVec[]);
+    [startPoint[0], startPoint[1]],
+    [endPoint[0], endPoint[1]],
+  ]);
   const outerBound =
     expandStartBound &&
     expandEndBound &&
     expandStartBound.unite(expandEndBound);
-  let points = [nextStartPoint, lastEndPoint] as IVec3[];
+  let points = [nextStartPoint, lastEndPoint];
   pushWithPriority(points, lineBound.getVerticesAndMidpoints());
 
   if (!startBound || !endBound) {
@@ -534,7 +539,7 @@ function getConnectablePoints(
     pushWithPriority(points, expandStartBound.getVerticesAndMidpoints());
     pushWithPriority(
       points,
-      expandStartBound.include(lastEndPoint as unknown as IVec).points
+      expandStartBound.include([lastEndPoint[0], lastEndPoint[1]]).points
     );
   }
 
@@ -542,7 +547,7 @@ function getConnectablePoints(
     pushWithPriority(points, expandEndBound.getVerticesAndMidpoints());
     pushWithPriority(
       points,
-      expandEndBound.include(nextStartPoint as unknown as IVec).points
+      expandEndBound.include([nextStartPoint[0], nextStartPoint[1]]).points
     );
   }
 
@@ -561,7 +566,7 @@ function getConnectablePoints(
         almostEqual(item[0], point[0], 0.02) &&
         almostEqual(item[1], point[1], 0.02)
     );
-  }) as IVec3[];
+  });
   if (!startEnds[0] || !startEnds[1]) {
     throw new BlockSuiteError(
       BlockSuiteError.ErrorCode.ValueNotExists,
@@ -603,7 +608,9 @@ function mergePath(points: IVec[] | IVec3[]) {
       continue;
     result.push([cur[0], cur[1]]);
   }
-  result.push(last(points as IVec[]) as IVec);
+  if (points.length !== 0) {
+    result.push([points[points.length - 1][0], points[points.length - 1][1]]);
+  }
   for (let i = 0; i < result.length - 1; i++) {
     const cur = result[i];
     const next = result[i + 1];
@@ -687,7 +694,7 @@ function getNextPoint(
   offsetW = 10,
   offsetH = 10
 ) {
-  const result: IVec = Array.from(point) as IVec;
+  const result: IVec = [point[0], point[1]];
   if (almostEqual(bound.x, result[0])) result[0] -= offsetX;
   else if (almostEqual(bound.y, result[1])) result[1] -= offsetY;
   else if (almostEqual(bound.maxX, result[0])) result[0] += offsetW;
@@ -993,7 +1000,7 @@ export class ConnectionOverlay extends Overlay {
           this.highlightPoint = anchor.point;
           result = {
             id: connectable.id,
-            position: anchor.coord as IVec,
+            position: anchor.coord,
           };
         }
       }
@@ -1001,7 +1008,7 @@ export class ConnectionOverlay extends Overlay {
       if (shortestDistance < 8 && result) break;
 
       // if not, check if closes to bound
-      const nearestPoint = connectable.getNearestPoint(point as IVec) as IVec;
+      const nearestPoint = connectable.getNearestPoint(point);
 
       if (Vec.dist(nearestPoint, point) < 8) {
         this.highlightPoint = nearestPoint;
@@ -1013,9 +1020,7 @@ export class ConnectionOverlay extends Overlay {
         target.push(connectable);
         result = {
           id: connectable.id,
-          position: bound
-            .toRelative(originPoint)
-            .map(n => clamp(n, 0, 1)) as IVec,
+          position: Vec.clampV(bound.toRelative(originPoint), 0, 1),
         };
       }
 
@@ -1048,7 +1053,7 @@ export class ConnectionOverlay extends Overlay {
     // at last, if not, just return the point
     if (!result) {
       result = {
-        position: point as IVec,
+        position: point,
       };
     }
 
@@ -1383,7 +1388,7 @@ export class ConnectorPathGenerator extends PathGenerator {
       const eb = Bound.deserialize(end.xywh);
       const startPoint = getNearestConnectableAnchor(start, eb.center);
       const endPoint = getNearestConnectableAnchor(end, sb.center);
-      return [startPoint, endPoint];
+      return (startPoint && endPoint && [startPoint, endPoint]) ?? [];
     } else {
       const endPoint = this._getConnectionPoint(connector, 'target');
       const startPoint = this._getConnectionPoint(connector, 'source');

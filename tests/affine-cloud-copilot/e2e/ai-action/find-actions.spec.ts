@@ -1,17 +1,17 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIAction/FindActions', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should find actions for selected content', async ({ page, utils }) => {
+  test('should find actions for selected content', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { findActions } = await utils.editor.askAIWithText(
       page,
       `Choose a Booking Platform
@@ -39,7 +39,7 @@ Compare and Select Flights`
   });
 
   test('should find actions for selected text block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { findActions } = await utils.editor.askAIWithEdgeless(
@@ -71,7 +71,7 @@ Compare and Select Flights`
   });
 
   test('should find actions for selected note block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { findActions } = await utils.editor.askAIWithEdgeless(
@@ -102,7 +102,10 @@ Compare and Select Flights`
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
-  test('should show chat history in chat panel', async ({ page, utils }) => {
+  test('should show chat history in chat panel', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { findActions } = await utils.editor.askAIWithText(
       page,
       `Choose a Booking Platform

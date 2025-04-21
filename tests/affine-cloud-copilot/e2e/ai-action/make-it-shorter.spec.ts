@@ -1,18 +1,15 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIAction/MakeItShorter', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should support making the selected content shorter', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { makeItShorter } = await utils.editor.askAIWithText(
@@ -25,7 +22,7 @@ test.describe('AIAction/MakeItShorter', () => {
   });
 
   test('should support making the selected text block shorter in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { makeItShorter } = await utils.editor.askAIWithEdgeless(
@@ -43,7 +40,7 @@ test.describe('AIAction/MakeItShorter', () => {
   });
 
   test('should support making the selected note block shorter in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { makeItShorter } = await utils.editor.askAIWithEdgeless(
@@ -60,7 +57,10 @@ test.describe('AIAction/MakeItShorter', () => {
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
-  test('should show chat history in chat panel', async ({ page, utils }) => {
+  test('should show chat history in chat panel', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { makeItShorter } = await utils.editor.askAIWithText(
       page,
       'AFFiNE is a workspace with fully merged docs'

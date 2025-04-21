@@ -328,6 +328,9 @@ const ConflictList = ({
           title: docRecord.title$.value || t['Untitled'](),
         }),
         cancelText: t['com.affine.confirmModal.button.cancel'](),
+        confirmButtonOptions: {
+          variant: 'error',
+        },
         confirmText: t.Delete(),
         onConfirm: () => {
           docRecord.moveToTrash();

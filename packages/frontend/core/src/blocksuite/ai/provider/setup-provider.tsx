@@ -1,4 +1,5 @@
 import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onboarding/apis';
+import type { AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
   type ChatHistoryOrder,
@@ -13,6 +14,16 @@ import type { CopilotClient } from './copilot-client';
 import type { PromptKey } from './prompt';
 import { textToText, toImage } from './request';
 import { setupTracker } from './tracker';
+
+function toAIUserInfo(account: AuthAccountInfo | null) {
+  if (!account) return null;
+  return {
+    avatarUrl: account.avatar ?? '',
+    email: account.email ?? '',
+    id: account.id,
+    name: account.label,
+  };
+}
 
 const filterStyleToPromptName = new Map<string, PromptKey>(
   Object.entries({
@@ -33,7 +44,8 @@ const processTypeToPromptName = new Map<string, PromptKey>(
 
 export function setupAIProvider(
   client: CopilotClient,
-  globalDialogService: GlobalDialogService
+  globalDialogService: GlobalDialogService,
+  authService: AuthService
 ) {
   async function createSession({
     workspaceId,
@@ -57,6 +69,16 @@ export function setupAIProvider(
       promptName,
     });
   }
+
+  AIProvider.provide('userInfo', () => {
+    return toAIUserInfo(authService.session.account$.value);
+  });
+
+  const accountSubscription = authService.session.account$.subscribe(
+    account => {
+      AIProvider.slots.userInfo.next(toAIUserInfo(account));
+    }
+  );
 
   //#region actions
   AIProvider.provide('chat', async options => {
@@ -774,5 +796,6 @@ Could you make a new website based on these notes and send back just the html fi
 
   return () => {
     disposeRequestLoginHandler.unsubscribe();
+    accountSubscription.unsubscribe();
   };
 }

@@ -155,7 +155,9 @@ const usePatchSpecs = (mode: DocMode) => {
   );
 
   const enablePDFEmbedPreview = useLiveData(
-    featureFlagService.flags.enable_pdf_embed_preview.$
+    featureFlagService.flags.enable_pdf_embed_preview.$.map(
+      flag => !workspaceService.workspace.openOptions.isSharedMode && flag
+    )
   );
 
   const patchedSpecs = useMemo(() => {

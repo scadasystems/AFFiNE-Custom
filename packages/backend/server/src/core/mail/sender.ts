@@ -56,13 +56,7 @@ export class MailSender {
   }
 
   private setup() {
-    const { SMTP, enabled } = this.config.mailer;
-
-    if (!enabled) {
-      this.smtp = null;
-      return;
-    }
-
+    const { SMTP } = this.config.mailer;
     const opts = configToSMTPOptions(SMTP);
 
     if (SMTP.host) {
@@ -83,6 +77,7 @@ export class MailSender {
       });
     } else {
       this.logger.warn('Mailer SMTP transport is not configured.');
+      this.smtp = null;
     }
   }
 

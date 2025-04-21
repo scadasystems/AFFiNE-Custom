@@ -49,6 +49,7 @@ type DocEvents =
   | 'openDocOptionsMenu'
   | 'openDocInfo'
   | 'copyBlockToLink'
+  | 'loadDoc'
   | 'bookmark'
   | 'editProperty'
   | 'editPropertyMeta'
@@ -177,6 +178,10 @@ type MeetingEvents =
   | 'activeMenubarAppItem';
 // END SECTION
 
+// SECTION: mention
+type MentionEvents = 'mentionMember' | 'noAccessPrompted';
+// END SECTION
+
 type UserEvents =
   | GeneralEvents
   | AppEvents
@@ -198,7 +203,9 @@ type UserEvents =
   | TemplateEvents
   | NotificationEvents
   | IntegrationEvents
-  | MeetingEvents;
+  | MeetingEvents
+  | MentionEvents;
+
 interface PageDivision {
   [page: string]: {
     [segment: string]: {
@@ -403,9 +410,18 @@ const PageEvents = {
     },
   },
   doc: {
+    $: {
+      $: ['loadDoc'],
+    },
     editor: {
       slashMenu: ['linkDoc', 'createDoc', 'bookmark'],
-      atMenu: ['linkDoc', 'import', 'createDoc'],
+      atMenu: [
+        'linkDoc',
+        'import',
+        'createDoc',
+        'mentionMember',
+        'noAccessPrompted',
+      ],
       quickSearch: ['createDoc'],
       formatToolbar: ['bold'],
       pageRef: ['navigate'],
@@ -697,6 +713,16 @@ export type EventArgs = {
       | 'About AFFiNE'
       | 'Meeting Settings'
       | 'Quit AFFiNE Completely';
+  };
+  mentionMember: {
+    type: 'member' | 'invite' | 'more';
+  };
+  noAccessPrompted: {};
+  loadDoc: {
+    workspaceId: string;
+    docId: string;
+    time: number;
+    success: boolean;
   };
 };
 

@@ -1,6 +1,7 @@
 import { Popover, uniReactRoot } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem } from '@affine/component/ui/menu';
+import { PeekViewService } from '@affine/core/modules/peek-view';
 import {
   type Cell,
   type CellRenderProps,
@@ -40,6 +41,7 @@ import {
 
 import { WorkspaceDialogService } from '../../../../modules/dialogs';
 import { useSignalValue } from '../../../../modules/doc-info/utils';
+import type { ImageData } from '../../../../modules/peek-view/view/image-preview';
 import { CircularProgress } from '../../components/loading';
 import { progressIconContainer } from '../../components/loading.css';
 import type {
@@ -216,7 +218,8 @@ class FileCellManager {
   }
 
   constructor(
-    props: CellRenderProps<{}, FileCellRawValueType, FileCellJsonValueType>
+    props: CellRenderProps<{}, FileCellRawValueType, FileCellJsonValueType>,
+    private readonly peekViewService: PeekViewService
   ) {
     this.cell = props.cell;
     this.selectCurrentCell = props.selectCurrentCell;
@@ -298,6 +301,46 @@ class FileCellManager {
       a.order > b.order ? 1 : -1
     );
   });
+
+  openPreview = (id: string) => {
+    const imageList = this.fileList.value
+      .filter(v => v.type === 'done')
+      .map(v => ({
+        ...v,
+        ...this.fileUploadManager?.getFileInfo(v.id).value,
+      }))
+      .filter(v => SUPPORTED_IMAGE_MIME_TYPES.has(v?.fileType?.mime ?? ''));
+    const getImageData = (index: number): ImageData | undefined => {
+      const file = imageList[index];
+      if (!file) return;
+      const previousIndex = index - 1;
+      const nextIndex = index + 1;
+      const hasPrevious = previousIndex >= 0;
+      const hasNext = nextIndex < imageList.length;
+      return {
+        index,
+        url: file.url ?? '',
+        caption: file.name,
+        previous: hasPrevious ? () => getImageData(previousIndex) : undefined,
+        next: hasNext ? () => getImageData(nextIndex) : undefined,
+      };
+    };
+    const currentIndex = imageList.findIndex(v => v.id === id);
+    if (currentIndex === -1) return;
+    const imageData = getImageData(currentIndex);
+    if (!imageData) return;
+    this.peekViewService.peekView
+      .open({
+        type: 'image-list',
+        data: {
+          image: imageData,
+          total: imageList.length,
+        },
+      })
+      .catch(error => {
+        console.error('Failed to open image list', error);
+      });
+  };
 }
 
 const SUPPORTED_IMAGE_MIME_TYPES = new Set([
@@ -317,8 +360,9 @@ const FileCellComponent: ForwardRefRenderFunction<
   DataViewCellLifeCycle,
   CellRenderProps<{}, FileCellRawValueType, FileCellJsonValueType>
 > = (props, ref): ReactNode => {
+  const peekView = useService(PeekViewService);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const manager = useMemo(() => new FileCellManager(props), []);
+  const manager = useMemo(() => new FileCellManager(props, peekView), []);
 
   useEffect(() => {
     return () => {
@@ -396,7 +440,7 @@ const FileCellComponent: ForwardRefRenderFunction<
               key={file.id}
               file={file}
               handleRemoveFile={manager.removeFile}
-              fileUploadManager={manager.fileUploadManager}
+              manager={manager}
             />
           ))}
         </div>
@@ -440,10 +484,7 @@ const FileCellComponent: ForwardRefRenderFunction<
       <div className={styles.cellContainer}>
         {fileList.map(file => (
           <div key={file.id} className={styles.fileItemCell}>
-            <FilePreview
-              file={file}
-              fileUploadManager={manager.fileUploadManager}
-            />
+            <FilePreview file={file} manager={manager} />
           </div>
         ))}
       </div>
@@ -453,11 +494,13 @@ const FileCellComponent: ForwardRefRenderFunction<
 
 const useFilePreview = (
   file: FileItemRenderType,
-  fileUploadManager?: FileUploadManager
+  manager: FileCellManager
 ): {
   preview: ReactNode;
+  onPreview?: () => void;
   fileType: 'uploading' | 'loading' | 'image' | 'file';
 } => {
+  const fileUploadManager = manager.fileUploadManager;
   const uploadProgress = useSignalValue(
     file.type === 'uploading'
       ? fileUploadManager?.getUploadProgress(file.id)
@@ -486,9 +529,18 @@ const useFilePreview = (
         fileType: 'loading',
       };
     }
+    const onPreview = () => {
+      manager.openPreview(file.id);
+    };
     return {
+      onPreview,
       preview: (
         <img
+          onClick={(e: MouseEvent) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onPreview();
+          }}
           className={styles.imagePreviewIcon}
           src={loadFileData.url}
           alt={file.name}
@@ -507,11 +559,11 @@ const useFilePreview = (
 export const FileListItem = (props: {
   file: FileItemRenderType;
   handleRemoveFile: (file: FileItemRenderType, e?: MouseEvent) => void;
-  fileUploadManager?: FileUploadManager;
+  manager: FileCellManager;
 }) => {
-  const { file, handleRemoveFile, fileUploadManager } = props;
-
-  const { preview, fileType } = useFilePreview(file, fileUploadManager);
+  const { file, handleRemoveFile, manager } = props;
+  const { preview, fileType, onPreview } = useFilePreview(file, manager);
+  const fileUploadManager = manager.fileUploadManager;
 
   const handleDownloadFile = useCallback(
     async (fileId: string, e?: MouseEvent) => {
@@ -541,18 +593,17 @@ export const FileListItem = (props: {
     },
     [fileUploadManager, file.name]
   );
+
   const menuItems = (
     <>
-      {/* {fileType === 'image' && (
+      {fileType === 'image' && (
         <MenuItem
-          onClick={() => {
-            console.log('Preview image:', file.id);
-          }}
+          onClick={onPreview}
           prefixIcon={<FileIcon width={20} height={20} />}
         >
           Preview
         </MenuItem>
-      )} */}
+      )}
       {(fileType === 'file' || fileType === 'image') && (
         <MenuItem
           onClick={e => {
@@ -579,7 +630,10 @@ export const FileListItem = (props: {
 
   return (
     <div className={styles.fileItem}>
-      <div className={styles.fileItemContent}>
+      <div
+        className={styles.fileItemContent}
+        style={fileType === 'image' ? { cursor: 'pointer' } : undefined}
+      >
         {fileType === 'image' ? (
           <div className={styles.fileItemImagePreview}>{preview}</div>
         ) : (
@@ -606,15 +660,22 @@ export const FileListItem = (props: {
 
 const FilePreview = (props: {
   file: FileItemRenderType;
-  fileUploadManager?: FileUploadManager;
+  manager: FileCellManager;
 }) => {
-  const { file, fileUploadManager } = props;
-  const { preview, fileType } = useFilePreview(file, fileUploadManager);
+  const { file, manager } = props;
+  const { preview, fileType } = useFilePreview(file, manager);
   if (fileType === 'file') {
     return <div className={styles.filePreviewContainer}>{file.name}</div>;
   }
   if (fileType === 'image') {
-    return <div className={styles.imagePreviewContainer}>{preview}</div>;
+    return (
+      <div
+        className={styles.imagePreviewContainer}
+        style={{ cursor: 'pointer' }}
+      >
+        {preview}
+      </div>
+    );
   }
   return preview;
 };

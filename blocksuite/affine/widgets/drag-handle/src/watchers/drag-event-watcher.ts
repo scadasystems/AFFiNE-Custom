@@ -195,25 +195,25 @@ export class DragEventWatcher {
     dragPayload: DragBlockPayload,
     dropPayload: DropPayload
   ): DropResult | null => {
-    const model = dropBlock.model;
+    const dropModel = dropBlock.model;
 
     const snapshot = dragPayload?.bsEntity?.snapshot;
     if (
       !snapshot ||
       snapshot.content.length === 0 ||
       !dragPayload?.from ||
-      matchModels(model, [DatabaseBlockModel])
+      matchModels(dropModel, [DatabaseBlockModel])
     )
       return null;
 
-    const isDropOnNoteBlock = matchModels(model, [NoteBlockModel]);
+    const isDropOnNoteBlock = matchModels(dropModel, [NoteBlockModel]);
 
     const schema = this.std.store.schema;
     const edge = dropPayload.edge;
     const scale = this.widget.scale.peek();
     let result: DropResult | null = null;
 
-    if (edge === 'right' && matchModels(dropBlock.model, [ListBlockModel])) {
+    if (edge === 'right' && matchModels(dropModel, [ListBlockModel])) {
       const domRect = getRectByBlockComponent(dropBlock);
       const placement = 'in';
 
@@ -279,7 +279,7 @@ export class DragEventWatcher {
         placement,
         rect: Rect.fromLWTH(domRect.left, domRect.width, y, 3 * scale),
         modelState: {
-          model,
+          model: dropModel,
           rect: domRect,
           element: dropBlock,
         },
@@ -548,145 +548,6 @@ export class DragEventWatcher {
 
     if (!parent) return;
 
-    if (dragPayload.bsEntity?.fromMode === 'gfx') {
-      if (!matchModels(parent, [NoteBlockModel])) {
-        return;
-      }
-
-      // if not all blocks can be dropped in note block, merge the snapshot to the current doc
-      if (
-        !snapshot.content.every(block =>
-          schema.safeValidate(block.flavour, 'affine:note')
-        ) &&
-        // if all blocks are note blocks, merge it to the current parent note
-        !snapshot.content.every(block => block.flavour === 'affine:note')
-      ) {
-        // merge the snapshot to the current doc if the snapshot comes from other doc
-        if (dragPayload.from?.docId !== this.widget.doc.id) {
-          this._mergeSnapshotToCurDoc(snapshot)
-            .then(idRemap => {
-              let largestElem!: {
-                size: number;
-                id: string;
-                flavour: string;
-              };
-
-              idRemap.forEach(val => {
-                const gfxElement = this.gfx.getElementById(val) as GfxModel;
-
-                if (gfxElement?.elementBound) {
-                  const elemBound = gfxElement.elementBound;
-                  const flavour = isPrimitiveModel(gfxElement)
-                    ? gfxElement.type
-                    : gfxElement.flavour;
-
-                  largestElem =
-                    (largestElem?.size ?? 0) < elemBound.w * elemBound.h
-                      ? { size: elemBound.w * elemBound.h, id: val, flavour }
-                      : largestElem;
-                }
-              });
-
-              if (!largestElem) {
-                store.addBlock(
-                  'affine:embed-linked-doc',
-                  {
-                    pageId: store.doc.id,
-                  },
-                  parent.id,
-                  index
-                );
-              } else {
-                store.addBlock(
-                  'affine:surface-ref',
-                  {
-                    reference: largestElem.id,
-                    refFlavour: largestElem.flavour,
-                  },
-                  parent.id,
-                  index
-                );
-              }
-            })
-            .catch(console.error);
-        }
-        // otherwise, just to create a surface-ref block
-        else {
-          let largestElem!: {
-            size: number;
-            id: string;
-            flavour: string;
-          };
-
-          const walk = (block: BlockSnapshot) => {
-            if (block.flavour === 'affine:surface') {
-              Object.values(
-                block.props.elements as Record<
-                  string,
-                  { id: string; xywh: SerializedXYWH; type: string }
-                >
-              ).forEach(elem => {
-                if (elem.xywh) {
-                  const bound = Bound.deserialize(elem.xywh);
-                  const size = bound.w * bound.h;
-                  if ((largestElem?.size ?? 0) < size) {
-                    largestElem = { size, id: elem.id, flavour: elem.type };
-                  }
-                }
-              });
-              block.children.forEach(walk);
-            } else {
-              if (block.props.xywh) {
-                const bound = Bound.deserialize(
-                  block.props.xywh as SerializedXYWH
-                );
-                const size = bound.w * bound.h;
-                if ((largestElem?.size ?? 0) < size) {
-                  largestElem = { size, id: block.id, flavour: block.flavour };
-                }
-              }
-            }
-          };
-
-          snapshot.content.forEach(walk);
-
-          if (largestElem) {
-            store.addBlock(
-              'affine:surface-ref',
-              {
-                reference: largestElem.id,
-                refFlavour: largestElem.flavour,
-              },
-              parent.id,
-              index
-            );
-          } else {
-            store.addBlock(
-              'affine:embed-linked-doc',
-              {
-                pageId: store.doc.id,
-              },
-              parent.id,
-              index
-            );
-          }
-        }
-
-        return;
-      }
-    }
-
-    // drop a note on other note
-    if (matchModels(parent, [NoteBlockModel])) {
-      const [first] = snapshot.content;
-      if (first.flavour === 'affine:note') {
-        if (parent.id !== first.id) {
-          this._onDropNoteOnNote(snapshot, parent.id, index);
-        }
-        return;
-      }
-    }
-
     // drop on the same place, do nothing
     if (
       (dragPayload.from?.docId === this.widget.doc.id &&
@@ -698,7 +559,148 @@ export class DragEventWatcher {
       return;
     }
 
-    this._dropToModel(snapshot, parent.id, index).catch(console.error);
+    // drop a note on other note
+    if (
+      matchModels(parent, [NoteBlockModel]) &&
+      snapshot.content.every(block => block.flavour === 'affine:note')
+    ) {
+      snapshot.content = snapshot.content.filter(
+        block =>
+          dragPayload.from?.docId !== this.widget.doc.id ||
+          block.id !== parent.id
+      );
+      if (snapshot.content.length) {
+        this._onDropNoteOnNote(snapshot, parent.id, index);
+      }
+      return;
+    }
+
+    // all blocks can be safely dropped in the target parent
+    if (
+      snapshot.content.every(block =>
+        schema.safeValidate(block.flavour, parent.flavour)
+      )
+    ) {
+      this._dropToModel(snapshot, parent.id, index).catch(console.error);
+      return;
+    }
+
+    if (
+      dragPayload.bsEntity?.fromMode === 'gfx' &&
+      matchModels(parent, [NoteBlockModel])
+    ) {
+      // if the snapshot comes from the same doc, just create a surface-ref block
+      if (dragPayload.from?.docId === this.widget.doc.id) {
+        let largestElem!: {
+          size: number;
+          id: string;
+          flavour: string;
+        };
+
+        const walk = (block: BlockSnapshot) => {
+          if (block.flavour === 'affine:surface') {
+            Object.values(
+              block.props.elements as Record<
+                string,
+                { id: string; xywh: SerializedXYWH; type: string }
+              >
+            ).forEach(elem => {
+              if (elem.xywh) {
+                const bound = Bound.deserialize(elem.xywh);
+                const size = bound.w * bound.h;
+                if ((largestElem?.size ?? 0) < size) {
+                  largestElem = { size, id: elem.id, flavour: elem.type };
+                }
+              }
+            });
+            block.children.forEach(walk);
+          } else {
+            if (block.props.xywh) {
+              const bound = Bound.deserialize(
+                block.props.xywh as SerializedXYWH
+              );
+              const size = bound.w * bound.h;
+              if ((largestElem?.size ?? 0) < size) {
+                largestElem = { size, id: block.id, flavour: block.flavour };
+              }
+            }
+          }
+        };
+
+        snapshot.content.forEach(walk);
+
+        if (largestElem) {
+          store.addBlock(
+            'affine:surface-ref',
+            {
+              reference: largestElem.id,
+              refFlavour: largestElem.flavour,
+            },
+            parent.id,
+            index
+          );
+        } else {
+          store.addBlock(
+            'affine:embed-linked-doc',
+            {
+              pageId: store.doc.id,
+            },
+            parent.id,
+            index
+          );
+        }
+      }
+      // otherwise, merge the snapshot into the current doc
+      // and create a surface-ref block or embed-linked-doc block
+      else {
+        this._mergeSnapshotToCurDoc(snapshot)
+          .then(idRemap => {
+            let largestElem!: {
+              size: number;
+              id: string;
+              flavour: string;
+            };
+
+            idRemap.forEach(val => {
+              const gfxElement = this.gfx.getElementById(val) as GfxModel;
+
+              if (gfxElement?.elementBound) {
+                const elemBound = gfxElement.elementBound;
+                const flavour = isPrimitiveModel(gfxElement)
+                  ? gfxElement.type
+                  : gfxElement.flavour;
+
+                largestElem =
+                  (largestElem?.size ?? 0) < elemBound.w * elemBound.h
+                    ? { size: elemBound.w * elemBound.h, id: val, flavour }
+                    : largestElem;
+              }
+            });
+
+            if (!largestElem) {
+              store.addBlock(
+                'affine:embed-linked-doc',
+                {
+                  pageId: store.doc.id,
+                },
+                parent.id,
+                index
+              );
+            } else {
+              store.addBlock(
+                'affine:surface-ref',
+                {
+                  reference: largestElem.id,
+                  refFlavour: largestElem.flavour,
+                },
+                parent.id,
+                index
+              );
+            }
+          })
+          .catch(console.error);
+      }
+    }
   };
 
   private readonly _onDrop = (

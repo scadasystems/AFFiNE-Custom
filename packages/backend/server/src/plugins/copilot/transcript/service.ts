@@ -23,6 +23,7 @@ import {
 } from '../providers';
 import { CopilotStorage } from '../storage';
 import {
+  AudioBlobInfos,
   TranscriptionPayload,
   TranscriptionResponseSchema,
   TranscriptPayloadSchema,
@@ -32,8 +33,7 @@ import { readStream } from './utils';
 export type TranscriptionJob = {
   id: string;
   status: AiJobStatus;
-  url?: string;
-  mimeType?: string;
+  infos?: AudioBlobInfos;
   transcription?: TranscriptionPayload;
 };
 
@@ -52,7 +52,7 @@ export class CopilotTranscriptionService {
     userId: string,
     workspaceId: string,
     blobId: string,
-    blob: FileUpload
+    blobs: FileUpload[]
   ): Promise<TranscriptionJob> {
     if (await this.models.copilotJob.has(userId, workspaceId, blobId)) {
       throw new CopilotTranscriptionJobExists();
@@ -65,21 +65,29 @@ export class CopilotTranscriptionService {
       type: AiJobType.transcription,
     });
 
-    const buffer = await readStream(blob.createReadStream());
-    const url = await this.storage.put(userId, workspaceId, blobId, buffer);
+    const infos: AudioBlobInfos = [];
+    for (const [idx, blob] of blobs.entries()) {
+      const buffer = await readStream(blob.createReadStream());
+      const url = await this.storage.put(
+        userId,
+        workspaceId,
+        `${blobId}-${idx}`,
+        buffer
+      );
+      infos.push({ url, mimeType: blob.mimetype });
+    }
 
-    return await this.executeTranscriptionJob(jobId, url, blob.mimetype);
+    return await this.executeTranscriptionJob(jobId, infos);
   }
 
   async executeTranscriptionJob(
     jobId: string,
-    url: string,
-    mimeType: string
+    infos: AudioBlobInfos
   ): Promise<TranscriptionJob> {
     const status = AiJobStatus.running;
     const success = await this.models.copilotJob.update(jobId, {
       status,
-      payload: { url, mimeType },
+      payload: { infos },
     });
 
     if (!success) {
@@ -88,8 +96,7 @@ export class CopilotTranscriptionService {
 
     await this.job.add('copilot.transcript.submit', {
       jobId,
-      url,
-      mimeType,
+      infos,
     });
 
     return { id: jobId, status };
@@ -132,8 +139,13 @@ export class CopilotTranscriptionService {
 
     const payload = TranscriptPayloadSchema.safeParse(job.payload);
     if (payload.success) {
-      ret.url = payload.data.url || undefined;
-      ret.mimeType = payload.data.mimeType || undefined;
+      let { url, mimeType, infos } = payload.data;
+      infos = infos || [];
+      if (url && mimeType) {
+        infos.push({ url, mimeType });
+      }
+
+      ret.infos = this.mergeInfos(infos, url, mimeType);
       if (job.status === AiJobStatus.claimed) {
         ret.transcription = payload.data;
       }
@@ -173,7 +185,24 @@ export class CopilotTranscriptionService {
     );
   }
 
-  private convertTime(time: number) {
+  // TODO(@darkskygit): remove after old server down
+  private mergeInfos(
+    infos?: AudioBlobInfos | null,
+    url?: string | null,
+    mimeType?: string | null
+  ) {
+    if (url && mimeType) {
+      if (infos) {
+        infos.push({ url, mimeType });
+      } else {
+        infos = [{ url, mimeType }];
+      }
+    }
+    return infos || [];
+  }
+
+  private convertTime(time: number, offset = 0) {
+    time = time + offset;
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     const hours = Math.floor(minutes / 60);
@@ -183,32 +212,46 @@ export class CopilotTranscriptionService {
     return `${hoursStr}:${minutesStr}:${secondsStr}`;
   }
 
+  private async callTranscript(url: string, mimeType: string, offset: number) {
+    const result = await this.chatWithPrompt(
+      'Transcript audio',
+      {
+        attachments: [url],
+        params: { mimetype: mimeType },
+      },
+      TranscriptionResponseSchema
+    );
+
+    const transcription = TranscriptionResponseSchema.parse(
+      JSON.parse(result)
+    ).map(t => ({
+      speaker: t.a,
+      start: this.convertTime(t.s, offset),
+      end: this.convertTime(t.e, offset),
+      transcription: t.t,
+    }));
+
+    return transcription;
+  }
+
   @OnJob('copilot.transcript.submit')
   async transcriptAudio({
     jobId,
+    infos,
+    // @deprecated
     url,
     mimeType,
   }: Jobs['copilot.transcript.submit']) {
     try {
-      const result = await this.chatWithPrompt(
-        'Transcript audio',
-        {
-          attachments: [url],
-          params: { mimetype: mimeType },
-        },
-        TranscriptionResponseSchema
+      const blobInfos = this.mergeInfos(infos, url, mimeType);
+      const transcriptions = await Promise.all(
+        Array.from(blobInfos.entries()).map(([idx, { url, mimeType }]) =>
+          this.callTranscript(url, mimeType, idx * 10 * 60)
+        )
       );
 
-      const transcription = TranscriptionResponseSchema.parse(
-        JSON.parse(result)
-      ).map(t => ({
-        speaker: t.a,
-        start: this.convertTime(t.s),
-        end: this.convertTime(t.e),
-        transcription: t.t,
-      }));
       await this.models.copilotJob.update(jobId, {
-        payload: { transcription },
+        payload: { transcription: transcriptions.flat() },
       });
 
       await this.job.add('copilot.transcript.summary.submit', {

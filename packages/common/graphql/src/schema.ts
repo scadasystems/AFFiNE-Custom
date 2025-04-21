@@ -279,6 +279,9 @@ export enum CopilotModels {
   Gpt4Omni0806 = 'Gpt4Omni0806',
   Gpt4OmniMini = 'Gpt4OmniMini',
   Gpt4OmniMini0718 = 'Gpt4OmniMini0718',
+  Gpt41 = 'Gpt41',
+  Gpt41Mini = 'Gpt41Mini',
+  Gpt410414 = 'Gpt410414',
   TextEmbedding3Large = 'TextEmbedding3Large',
   TextEmbedding3Small = 'TextEmbedding3Small',
   TextEmbeddingAda002 = 'TextEmbeddingAda002',
@@ -567,6 +570,7 @@ export enum ErrorNames {
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED = 'COPILOT_CONTEXT_FILE_NOT_SUPPORTED',
   COPILOT_DOCS_NOT_FOUND = 'COPILOT_DOCS_NOT_FOUND',
   COPILOT_DOC_NOT_FOUND = 'COPILOT_DOC_NOT_FOUND',
+  COPILOT_EMBEDDING_DISABLED = 'COPILOT_EMBEDDING_DISABLED',
   COPILOT_EMBEDDING_UNAVAILABLE = 'COPILOT_EMBEDDING_UNAVAILABLE',
   COPILOT_FAILED_TO_CREATE_MESSAGE = 'COPILOT_FAILED_TO_CREATE_MESSAGE',
   COPILOT_FAILED_TO_GENERATE_TEXT = 'COPILOT_FAILED_TO_GENERATE_TEXT',
@@ -580,6 +584,7 @@ export enum ErrorNames {
   COPILOT_QUOTA_EXCEEDED = 'COPILOT_QUOTA_EXCEEDED',
   COPILOT_SESSION_DELETED = 'COPILOT_SESSION_DELETED',
   COPILOT_SESSION_NOT_FOUND = 'COPILOT_SESSION_NOT_FOUND',
+  COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED = 'COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED',
   COPILOT_TRANSCRIPTION_JOB_EXISTS = 'COPILOT_TRANSCRIPTION_JOB_EXISTS',
   COPILOT_TRANSCRIPTION_JOB_NOT_FOUND = 'COPILOT_TRANSCRIPTION_JOB_NOT_FOUND',
   CUSTOMER_PORTAL_CREATE_FAILED = 'CUSTOMER_PORTAL_CREATE_FAILED',
@@ -591,6 +596,7 @@ export enum ErrorNames {
   DOC_UPDATE_BLOCKED = 'DOC_UPDATE_BLOCKED',
   EARLY_ACCESS_REQUIRED = 'EARLY_ACCESS_REQUIRED',
   EMAIL_ALREADY_USED = 'EMAIL_ALREADY_USED',
+  EMAIL_SERVICE_NOT_CONFIGURED = 'EMAIL_SERVICE_NOT_CONFIGURED',
   EMAIL_TOKEN_NOT_FOUND = 'EMAIL_TOKEN_NOT_FOUND',
   EMAIL_VERIFICATION_REQUIRED = 'EMAIL_VERIFICATION_REQUIRED',
   EXPECT_TO_GRANT_DOC_USER_ROLES = 'EXPECT_TO_GRANT_DOC_USER_ROLES',
@@ -1432,8 +1438,9 @@ export interface MutationSetBlobArgs {
 }
 
 export interface MutationSubmitAudioTranscriptionArgs {
-  blob: Scalars['Upload']['input'];
+  blob?: InputMaybe<Scalars['Upload']['input']>;
   blobId: Scalars['String']['input'];
+  blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2000,6 +2007,8 @@ export interface UpdateUserSettingsInput {
 export interface UpdateWorkspaceInput {
   /** Enable AI */
   enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Enable doc embedding */
+  enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable url previous when sharing */
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -2224,6 +2233,8 @@ export interface WorkspaceType {
   doc: DocType;
   /** Enable AI */
   enableAi: Scalars['Boolean']['output'];
+  /** Enable doc embedding */
+  enableDocEmbedding: Scalars['Boolean']['output'];
   /** Enable url previous when sharing */
   enableUrlPreview: Scalars['Boolean']['output'];
   histories: Array<DocHistoryType>;
@@ -2991,7 +3002,10 @@ export type GetCopilotHistoriesQuery = {
 export type SubmitAudioTranscriptionMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   blobId: Scalars['String']['input'];
-  blob: Scalars['Upload']['input'];
+  blob?: InputMaybe<Scalars['Upload']['input']>;
+  blobs?: InputMaybe<
+    Array<Scalars['Upload']['input']> | Scalars['Upload']['input']
+  >;
 }>;
 
 export type SubmitAudioTranscriptionMutation = {
@@ -4098,6 +4112,7 @@ export type GetWorkspaceConfigQuery = {
     __typename?: 'WorkspaceType';
     enableAi: boolean;
     enableUrlPreview: boolean;
+    enableDocEmbedding: boolean;
     inviteLink: {
       __typename?: 'InviteLink';
       link: string;
@@ -4112,6 +4127,16 @@ export type SetEnableAiMutationVariables = Exact<{
 }>;
 
 export type SetEnableAiMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
+export type SetEnableDocEmbeddingMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableDocEmbedding: Scalars['Boolean']['input'];
+}>;
+
+export type SetEnableDocEmbeddingMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
@@ -4921,6 +4946,11 @@ export type Mutations =
       name: 'setEnableAiMutation';
       variables: SetEnableAiMutationVariables;
       response: SetEnableAiMutation;
+    }
+  | {
+      name: 'setEnableDocEmbeddingMutation';
+      variables: SetEnableDocEmbeddingMutationVariables;
+      response: SetEnableDocEmbeddingMutation;
     }
   | {
       name: 'setEnableUrlPreviewMutation';

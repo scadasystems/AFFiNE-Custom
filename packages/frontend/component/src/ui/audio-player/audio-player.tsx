@@ -8,8 +8,9 @@ import bytes from 'bytes';
 import { clamp } from 'lodash-es';
 import { type MouseEventHandler, type ReactNode, useCallback } from 'react';
 
-import { IconButton } from '../button';
+import { Button, IconButton } from '../button';
 import { AnimatedPlayIcon } from '../lottie';
+import { Menu, MenuItem } from '../menu';
 import * as styles from './audio-player.css';
 import { AudioWaveform } from './audio-waveform';
 
@@ -40,7 +41,14 @@ export interface AudioPlayerProps {
   onPause: MouseEventHandler;
   onStop: MouseEventHandler;
   onSeek: (newTime: number) => void;
+
+  // Playback rate
+  playbackRate: number;
+  onPlaybackRateChange: (rate: number) => void;
 }
+
+// Playback rate options
+const playbackRates = [0.5, 0.75, 1, 1.5, 1.75, 2, 3];
 
 export const AudioPlayer = ({
   name,
@@ -55,6 +63,8 @@ export const AudioPlayer = ({
   onPause,
   onSeek,
   onClick,
+  playbackRate,
+  onPlaybackRateChange,
 }: AudioPlayerProps) => {
   // Handle progress bar click
   const handleProgressClick = useCallback(
@@ -80,6 +90,13 @@ export const AudioPlayer = ({
     [loading, playbackState, onPause, onPlay]
   );
 
+  const handlePlaybackRateChange = useCallback(
+    (rate: number) => {
+      onPlaybackRateChange(rate);
+    },
+    [onPlaybackRateChange]
+  );
+
   // Calculate progress percentage
   const progressPercentage = duration > 0 ? seekTime / duration : 0;
   return (
@@ -97,6 +114,27 @@ export const AudioPlayer = ({
           </div>
         </div>
         <div className={styles.upperRight}>
+          <Menu
+            rootOptions={{ modal: false }}
+            children={
+              <Button variant="plain" className={styles.playbackRateDisplay}>
+                {playbackRate}x
+              </Button>
+            }
+            items={
+              <>
+                {playbackRates.map(rate => (
+                  <MenuItem
+                    key={rate}
+                    selected={rate === playbackRate}
+                    onClick={() => handlePlaybackRateChange(rate)}
+                  >
+                    {rate}x
+                  </MenuItem>
+                ))}
+              </>
+            }
+          />
           {notesEntry}
           <AnimatedPlayIcon
             onClick={handlePlayToggle}
@@ -111,7 +149,7 @@ export const AudioPlayer = ({
           waveform={waveform || []}
           progress={progressPercentage}
           onManualSeek={handleProgressClick}
-          loading={loading}
+          loading={!waveform || waveform.length === 0}
         />
         <div className={styles.timeDisplay}>{formatTime(duration)}</div>
       </div>

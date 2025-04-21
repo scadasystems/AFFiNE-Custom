@@ -77,6 +77,11 @@ export function useAIChatConfig() {
       const collections$ = collectionService.collections$;
       return createSignalFromObservable(collections$, []);
     },
+    getCollectionPageIds: (collectionId: string) => {
+      const collection$ = collectionService.collection$(collectionId);
+      // TODO: lack of documents that meet the collection rules
+      return collection$?.value?.allowList ?? [];
+    },
   };
 
   const searchMenuConfig = {

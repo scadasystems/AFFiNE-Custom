@@ -516,7 +516,7 @@ test('the viewport should be fit when the linked document is with edgeless mode'
 
   // move viewport
   const { x, y } = noteBoundingBox;
-  await page.mouse.click(x, y);
+  await page.mouse.click(x - 10, y - 10);
   await page.keyboard.down('Space');
   await page.waitForTimeout(50);
   await page.mouse.down();
@@ -524,10 +524,12 @@ test('the viewport should be fit when the linked document is with edgeless mode'
   await page.mouse.up();
   await page.keyboard.up('Space');
 
+  await expect(note).toBeHidden();
+
   // create edgeless text
   await page.keyboard.press('t');
   await page.mouse.click(x, y);
-  await page.locator('affine-edgeless-text').waitFor({ state: 'visible' });
+  await page.waitForSelector('affine-edgeless-text');
   await page.keyboard.type('Edgeless Text');
 
   const url = new URL(page.url());

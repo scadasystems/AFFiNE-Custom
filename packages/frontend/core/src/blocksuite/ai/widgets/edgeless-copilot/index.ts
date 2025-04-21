@@ -77,78 +77,86 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
     this._visible = visible;
   }
 
-  private _showCopilotPanel() {
+  private _showCopilotInput() {
     requestConnectedFrame(() => {
-      if (!this._copilotPanel) {
-        const panel = new EdgelessCopilotPanel();
-        panel.host = this.host;
-        panel.groups = this.groups;
-        this.renderRoot.append(panel);
-        this._copilotPanel = panel;
-      }
-
       const referenceElement = this.selectionElem;
-      const panel = this._copilotPanel;
-      // @TODO: optimize
-      const viewport = this.gfx.viewport;
-
       if (!referenceElement || !referenceElement.isConnected) return;
 
       // show ai input
       const rootBlockId = this.host.doc.root?.id;
-      if (rootBlockId) {
-        const aiPanel = this.host.view.getWidget(
-          AFFINE_AI_PANEL_WIDGET,
-          rootBlockId
-        );
-        if (aiPanel instanceof AffineAIPanelWidget && aiPanel.config) {
-          aiPanel.setState('input', referenceElement);
-        }
-      }
+      if (!rootBlockId) return;
 
-      autoUpdate(referenceElement, panel, () => {
-        computePosition(referenceElement, panel, {
-          placement: 'right-start',
-          middleware: [
-            offset({
-              mainAxis: 16,
-              crossAxis: 45,
-            }),
-            flip({
-              mainAxis: true,
-              crossAxis: true,
-              flipAlignment: true,
-            }),
-            shift(() => {
-              const { left, top, width, height } = viewport;
-              return {
-                padding: 20,
-                crossAxis: true,
-                rootBoundary: {
-                  x: left,
-                  y: top,
-                  width,
-                  height: height - 100,
-                },
-              };
-            }),
-            size({
-              apply: ({ elements }) => {
-                const { height } = viewport;
-                elements.floating.style.maxHeight = `${height - 140}px`;
-              },
-            }),
-          ],
-        })
-          .then(({ x, y }) => {
-            panel.style.left = `${x}px`;
-            panel.style.top = `${y}px`;
-          })
-          .catch(e => {
-            console.warn("Can't compute EdgelessCopilotPanel position", e);
-          });
-      });
+      const input = this.host.view.getWidget(
+        AFFINE_AI_PANEL_WIDGET,
+        rootBlockId
+      );
+
+      if (input instanceof AffineAIPanelWidget) {
+        input.setState('input', referenceElement);
+        requestAnimationFrame(() => {
+          this._createCopilotPanel();
+          this._updateCopilotPanel(input);
+        });
+      }
     }, this);
+  }
+
+  private _createCopilotPanel() {
+    if (!this._copilotPanel) {
+      const panel = new EdgelessCopilotPanel();
+      panel.host = this.host;
+      panel.groups = this.groups;
+      this.renderRoot.append(panel);
+      this._copilotPanel = panel;
+    }
+  }
+
+  private _updateCopilotPanel(referenceElement: HTMLElement) {
+    // @TODO: optimize
+    const viewport = this.gfx.viewport;
+    const panel = this._copilotPanel;
+    if (!panel) return;
+    autoUpdate(referenceElement, panel, () => {
+      computePosition(referenceElement, panel, {
+        placement: 'bottom-start',
+        middleware: [
+          offset({
+            mainAxis: 4,
+          }),
+          flip({
+            mainAxis: true,
+            crossAxis: true,
+            flipAlignment: true,
+          }),
+          shift(() => {
+            const { left, top, width, height } = viewport;
+            return {
+              padding: 20,
+              crossAxis: true,
+              rootBoundary: {
+                x: left,
+                y: top,
+                width,
+                height: height - 100,
+              },
+            };
+          }),
+          size({
+            apply: ({ elements }) => {
+              const { height } = viewport;
+              elements.floating.style.maxHeight = `${height - 140}px`;
+            },
+          }),
+        ],
+      })
+        .then(({ x, y }) => {
+          panel.style.left = `${x}px`;
+          panel.style.top = `${y}px`;
+        })
+        .catch(e => {
+          console.warn("Can't compute EdgelessCopilotPanel position", e);
+        });
+    });
   }
 
   private _updateSelection(rect: DOMRect) {
@@ -201,7 +209,7 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
         this._visible = true;
         this._updateSelection(CopilotSelectionTool.area);
         if (shouldShowPanel) {
-          this._showCopilotPanel();
+          this._showCopilotInput();
           this._watchClickOutside();
         } else {
           this.hideCopilotPanel();

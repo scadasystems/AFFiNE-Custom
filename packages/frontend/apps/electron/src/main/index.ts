@@ -73,7 +73,9 @@ app.on('window-all-closed', () => {
  * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
  */
 app.on('activate', () => {
-  launch().catch(e => console.error('Failed launch:', e));
+  if (app.isReady()) {
+    launch().catch(e => console.error('Failed launch:', e));
+  }
 });
 
 setupDeepLink(app);

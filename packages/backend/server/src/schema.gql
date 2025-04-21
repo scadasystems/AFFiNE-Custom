@@ -195,6 +195,9 @@ enum CopilotModels {
   Gpt4Omni0806
   Gpt4OmniMini
   Gpt4OmniMini0718
+  Gpt41
+  Gpt41Mini
+  Gpt410414
   TextEmbedding3Large
   TextEmbedding3Small
   TextEmbeddingAda002
@@ -422,6 +425,7 @@ enum ErrorNames {
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED
   COPILOT_DOCS_NOT_FOUND
   COPILOT_DOC_NOT_FOUND
+  COPILOT_EMBEDDING_DISABLED
   COPILOT_EMBEDDING_UNAVAILABLE
   COPILOT_FAILED_TO_CREATE_MESSAGE
   COPILOT_FAILED_TO_GENERATE_TEXT
@@ -435,6 +439,7 @@ enum ErrorNames {
   COPILOT_QUOTA_EXCEEDED
   COPILOT_SESSION_DELETED
   COPILOT_SESSION_NOT_FOUND
+  COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED
   COPILOT_TRANSCRIPTION_JOB_EXISTS
   COPILOT_TRANSCRIPTION_JOB_NOT_FOUND
   CUSTOMER_PORTAL_CREATE_FAILED
@@ -446,6 +451,7 @@ enum ErrorNames {
   DOC_UPDATE_BLOCKED
   EARLY_ACCESS_REQUIRED
   EMAIL_ALREADY_USED
+  EMAIL_SERVICE_NOT_CONFIGURED
   EMAIL_TOKEN_NOT_FOUND
   EMAIL_VERIFICATION_REQUIRED
   EXPECT_TO_GRANT_DOC_USER_ROLES
@@ -1004,7 +1010,7 @@ type Mutation {
   sendVerifyChangeEmail(callbackUrl: String!, email: String!, token: String!): Boolean!
   sendVerifyEmail(callbackUrl: String!): Boolean!
   setBlob(blob: Upload!, workspaceId: String!): String!
-  submitAudioTranscription(blob: Upload!, blobId: String!, workspaceId: String!): TranscriptionResultType
+  submitAudioTranscription(blob: Upload, blobId: String!, blobs: [Upload!], workspaceId: String!): TranscriptionResultType
 
   """update app configuration"""
   updateAppConfig(updates: [UpdateAppConfigInput!]!): JSONObject!
@@ -1488,6 +1494,9 @@ input UpdateWorkspaceInput {
   """Enable AI"""
   enableAi: Boolean
 
+  """Enable doc embedding"""
+  enableDocEmbedding: Boolean
+
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean
   id: ID!
@@ -1696,6 +1705,9 @@ type WorkspaceType {
 
   """Enable AI"""
   enableAi: Boolean!
+
+  """Enable doc embedding"""
+  enableDocEmbedding: Boolean!
 
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean!

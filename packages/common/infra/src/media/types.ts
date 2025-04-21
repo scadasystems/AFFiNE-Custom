@@ -66,7 +66,6 @@ export interface PlaybackState {
   updateTime: number;
   /**
    * the playback rate
-   * Not implemented yet. Always 1.0.
    */
-  // rate: number;
+  playbackRate: number;
 }

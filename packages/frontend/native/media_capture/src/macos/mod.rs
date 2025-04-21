@@ -1,4 +1,4 @@
-pub(crate) mod audio_buffer;
+pub mod audio_buffer;
 pub mod audio_stream_basic_desc;
 pub mod av_audio_file;
 pub mod av_audio_format;

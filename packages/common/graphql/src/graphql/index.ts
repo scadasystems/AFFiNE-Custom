@@ -601,9 +601,10 @@ export const getCopilotHistoriesQuery = {
 export const submitAudioTranscriptionMutation = {
   id: 'submitAudioTranscriptionMutation' as const,
   op: 'submitAudioTranscription',
-  query: `mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload!) {
+  query: `mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!]) {
   submitAudioTranscription(
     blob: $blob
+    blobs: $blobs
     blobId: $blobId
     workspaceId: $workspaceId
   ) {
@@ -1594,6 +1595,7 @@ export const getWorkspaceConfigQuery = {
   workspace(id: $id) {
     enableAi
     enableUrlPreview
+    enableDocEmbedding
     inviteLink {
       link
       expireTime
@@ -1607,6 +1609,16 @@ export const setEnableAiMutation = {
   op: 'setEnableAi',
   query: `mutation setEnableAi($id: ID!, $enableAi: Boolean!) {
   updateWorkspace(input: {id: $id, enableAi: $enableAi}) {
+    id
+  }
+}`,
+};
+
+export const setEnableDocEmbeddingMutation = {
+  id: 'setEnableDocEmbeddingMutation' as const,
+  op: 'setEnableDocEmbedding',
+  query: `mutation setEnableDocEmbedding($id: ID!, $enableDocEmbedding: Boolean!) {
+  updateWorkspace(input: {id: $id, enableDocEmbedding: $enableDocEmbedding}) {
     id
   }
 }`,

@@ -54,6 +54,12 @@ export class HttpRequestError extends UserFriendlyError {
     super('bad_request', 'http_request_error', message, args);
   }
 }
+
+export class EmailServiceNotConfigured extends UserFriendlyError {
+  constructor(message?: string) {
+    super('internal_server_error', 'email_service_not_configured', message);
+  }
+}
 @ObjectType()
 class QueryTooLongDataType {
   @Field() max!: number
@@ -753,6 +759,12 @@ export class CopilotFailedToMatchContext extends UserFriendlyError {
   }
 }
 
+export class CopilotEmbeddingDisabled extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'copilot_embedding_disabled', message);
+  }
+}
+
 export class CopilotEmbeddingUnavailable extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'copilot_embedding_unavailable', message);
@@ -768,6 +780,12 @@ export class CopilotTranscriptionJobExists extends UserFriendlyError {
 export class CopilotTranscriptionJobNotFound extends UserFriendlyError {
   constructor(message?: string) {
     super('bad_request', 'copilot_transcription_job_not_found', message);
+  }
+}
+
+export class CopilotTranscriptionAudioNotProvided extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'copilot_transcription_audio_not_provided', message);
   }
 }
 
@@ -937,6 +955,7 @@ export enum ErrorNames {
   BAD_REQUEST,
   GRAPHQL_BAD_REQUEST,
   HTTP_REQUEST_ERROR,
+  EMAIL_SERVICE_NOT_CONFIGURED,
   QUERY_TOO_LONG,
   VALIDATION_ERROR,
   USER_NOT_FOUND,
@@ -1024,9 +1043,11 @@ export enum ErrorNames {
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED,
   COPILOT_FAILED_TO_MODIFY_CONTEXT,
   COPILOT_FAILED_TO_MATCH_CONTEXT,
+  COPILOT_EMBEDDING_DISABLED,
   COPILOT_EMBEDDING_UNAVAILABLE,
   COPILOT_TRANSCRIPTION_JOB_EXISTS,
   COPILOT_TRANSCRIPTION_JOB_NOT_FOUND,
+  COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED,
   BLOB_QUOTA_EXCEEDED,
   STORAGE_QUOTA_EXCEEDED,
   MEMBER_QUOTA_EXCEEDED,

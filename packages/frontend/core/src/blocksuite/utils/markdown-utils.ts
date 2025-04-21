@@ -102,18 +102,19 @@ export async function getContentFromSlice(
 
 export const markdownToSnapshot = async (
   markdown: string,
-  host: EditorHost
+  store: Store,
+  host?: EditorHost
 ) => {
-  const transformer = host.std.store.getTransformer([
-    defaultImageProxyMiddleware,
-    pasteMiddleware(host.std),
-  ]);
-  const markdownAdapter = new MixTextAdapter(transformer, host.std.provider);
+  const middlewares = host
+    ? [defaultImageProxyMiddleware, pasteMiddleware(host.std)]
+    : [defaultImageProxyMiddleware];
+  const transformer = store.getTransformer(middlewares);
+  const markdownAdapter = new MixTextAdapter(transformer, store.provider);
   const payload = {
     file: markdown,
     assets: transformer.assetsManager,
-    workspaceId: host.std.store.workspace.id,
-    pageId: host.std.store.id,
+    workspaceId: store.workspace.id,
+    pageId: store.id,
   };
 
   const snapshot = await markdownAdapter.toSliceSnapshot(payload);
@@ -125,13 +126,17 @@ export const markdownToSnapshot = async (
 };
 
 export async function insertFromMarkdown(
-  host: EditorHost,
+  host: EditorHost | undefined,
   markdown: string,
   doc: Store,
   parent?: string,
   index?: number
 ) {
-  const { snapshot, transformer } = await markdownToSnapshot(markdown, host);
+  const { snapshot, transformer } = await markdownToSnapshot(
+    markdown,
+    doc,
+    host
+  );
 
   const snapshots = snapshot?.content.flatMap(x => x.children) ?? [];
 

@@ -16,7 +16,7 @@ rand          = { workspace = true }
 sha3          = { workspace = true }
 tiktoken-rs   = { workspace = true }
 v_htmlescape  = { workspace = true }
-y-octo        = { workspace = true }
+y-octo        = { workspace = true, features = ["large_refs"] }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 mimalloc = { workspace = true }

@@ -577,8 +577,8 @@ export type LiveDataOperation = 'set' | 'get' | 'watch' | 'unwatch';
 export type Unwrap<T> =
   T extends LiveData<infer Z>
     ? Unwrap<Z>
-    : T extends LiveData<infer A>[]
-      ? Unwrap<A>[]
+    : T extends readonly [...infer Elements]
+      ? { [K in keyof Elements]: Unwrap<Elements[K]> }
       : T;
 
 export type Flat<T> = T extends LiveData<infer P> ? LiveData<Unwrap<P>> : T;

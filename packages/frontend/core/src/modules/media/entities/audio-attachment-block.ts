@@ -1,4 +1,5 @@
-import { encodeAudioBlobToOpus } from '@affine/core/utils/webm-encoding';
+import { insertFromMarkdown } from '@affine/core/blocksuite/utils';
+import { encodeAudioBlobToOpusSlices } from '@affine/core/utils/webm-encoding';
 import { DebugLogger } from '@affine/debug';
 import { AiJobStatus } from '@affine/graphql';
 import track from '@affine/track';
@@ -25,6 +26,18 @@ const logger = new DebugLogger('audio-attachment-block');
 function sanitizeText(text: string) {
   return text.replace(/\r/g, '');
 }
+
+const colorOptions = [
+  cssVarV2.text.highlight.fg.red,
+  cssVarV2.text.highlight.fg.green,
+  cssVarV2.text.highlight.fg.blue,
+  cssVarV2.text.highlight.fg.yellow,
+  cssVarV2.text.highlight.fg.purple,
+  cssVarV2.text.highlight.fg.orange,
+  cssVarV2.text.highlight.fg.teal,
+  cssVarV2.text.highlight.fg.grey,
+  cssVarV2.text.highlight.fg.magenta,
+];
 
 export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
   private readonly refCount$ = new LiveData<number>(0);
@@ -115,17 +128,19 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
     const job = this.framework.createEntity(AudioTranscriptionJob, {
       blobId: this.props.props.sourceId,
       blockProps: transcriptionBlockProps,
-      getAudioFile: async () => {
+      getAudioFiles: async () => {
         const buffer = await this.audioMedia.getBuffer();
         if (!buffer) {
           throw new Error('No audio buffer available');
         }
-        const encodedBuffer = await encodeAudioBlobToOpus(buffer, 64000);
-        const blob = new Blob([encodedBuffer], { type: this.props.props.type });
-        const file = new File([blob], this.props.props.name, {
-          type: this.props.props.type,
+        const slices = await encodeAudioBlobToOpusSlices(buffer, 64000);
+        const files = slices.map((slice, index) => {
+          const blob = new Blob([slice], { type: 'audio/opus' });
+          return new File([blob], this.props.props.name + `-${index}.opus`, {
+            type: 'audio/opus',
+          });
         });
-        return file;
+        return files;
       },
     });
 
@@ -140,7 +155,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       }
       const status = await this.transcriptionJob.start();
       if (status.status === AiJobStatus.claimed) {
-        this.fillTranscriptionResult(status.result);
+        await this.fillTranscriptionResult(status.result);
       }
     } catch (error) {
       track.doc.editor.audioBlock.transcribeRecording({
@@ -152,55 +167,82 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
     }
   };
 
-  private readonly fillTranscriptionResult = (result: TranscriptionResult) => {
+  private readonly fillTranscriptionResult = async (
+    result: TranscriptionResult
+  ) => {
     this.props.props.caption = result.title ?? '';
 
-    const calloutId = this.props.doc.addBlock(
-      'affine:callout',
-      {
-        emoji: '💬',
-      },
-      this.transcriptionBlock$.value?.id
-    );
-
-    // todo: refactor
-    const speakerToColors = new Map<string, string>();
-    for (const segment of result.segments) {
-      let color = speakerToColors.get(segment.speaker);
-      const colorOptions = [
-        cssVarV2.text.highlight.fg.red,
-        cssVarV2.text.highlight.fg.green,
-        cssVarV2.text.highlight.fg.blue,
-        cssVarV2.text.highlight.fg.yellow,
-        cssVarV2.text.highlight.fg.purple,
-        cssVarV2.text.highlight.fg.orange,
-        cssVarV2.text.highlight.fg.teal,
-        cssVarV2.text.highlight.fg.grey,
-        cssVarV2.text.highlight.fg.magenta,
-      ];
-      if (!color) {
-        color = colorOptions[speakerToColors.size % colorOptions.length];
-        speakerToColors.set(segment.speaker, color);
-      }
-      const deltaInserts: DeltaInsert<AffineTextAttributes>[] = [
+    const addCalloutBlock = (
+      emoji: string,
+      title: string,
+      collapsed: boolean = false
+    ) => {
+      const calloutId = this.props.doc.addBlock(
+        'affine:callout',
         {
-          insert: sanitizeText(segment.start + ' ' + segment.speaker),
-          attributes: {
-            color,
-            bold: true,
-          },
+          emoji,
         },
-        {
-          insert: ': ' + sanitizeText(segment.transcription),
-        },
-      ];
+        this.transcriptionBlock$.value?.id
+      );
       this.props.doc.addBlock(
         'affine:paragraph',
         {
-          text: new Text(deltaInserts),
+          type: 'h6',
+          collapsed,
+          text: new Text([
+            {
+              insert: title,
+            },
+          ]),
         },
         calloutId
       );
-    }
+      return calloutId;
+    };
+    const fillTranscription = (segments: TranscriptionResult['segments']) => {
+      const calloutId = addCalloutBlock('💬', 'Transcript', true);
+
+      const speakerToColors = new Map<string, string>();
+      for (const segment of segments) {
+        let color = speakerToColors.get(segment.speaker);
+        if (!color) {
+          color = colorOptions[speakerToColors.size % colorOptions.length];
+          speakerToColors.set(segment.speaker, color);
+        }
+        const deltaInserts: DeltaInsert<AffineTextAttributes>[] = [
+          {
+            insert: sanitizeText(segment.start + ' ' + segment.speaker),
+            attributes: {
+              color,
+              bold: true,
+            },
+          },
+          {
+            insert: ': ' + sanitizeText(segment.transcription),
+          },
+        ];
+        this.props.doc.addBlock(
+          'affine:paragraph',
+          {
+            text: new Text(deltaInserts),
+          },
+          calloutId
+        );
+      }
+    };
+
+    const fillSummary = async (summary: TranscriptionResult['summary']) => {
+      const calloutId = addCalloutBlock('📑', 'Summary');
+      await insertFromMarkdown(
+        undefined,
+        summary,
+        this.props.doc,
+        calloutId,
+        1
+      );
+    };
+
+    fillTranscription(result.segments);
+    await fillSummary(result.summary);
   };
 }

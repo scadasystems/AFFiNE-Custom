@@ -80,7 +80,7 @@ const builtinSurfaceToolbarConfig = {
 
         ctx.store.addBlock(
           SurfaceRefBlockSchema.model.flavour,
-          { reference: frameId, refFlavour: NoteBlockSchema.model.flavour },
+          { reference: frameId, refFlavour: FrameBlockSchema.model.flavour },
           lastNoteId
         );
 

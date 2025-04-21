@@ -9,7 +9,9 @@ import {
   changeShapeStrokeStyle,
   changeShapeStrokeWidth,
   clickComponentToolbarMoreMenuButton,
+  dragBetweenViewCoords,
   getEdgelessSelectedRect,
+  getSelectedBoundCount,
   locatorComponentToolbar,
   locatorEdgelessToolButton,
   locatorShapeStrokeStyleButton,
@@ -24,13 +26,17 @@ import {
 import {
   addBasicBrushElement,
   addBasicRectShapeElement,
+  clickView,
   copyByKeyboard,
+  dblclickView,
   dragBetweenCoords,
   enterPlaygroundRoom,
   focusRichText,
   initEmptyEdgelessState,
   pasteByKeyboard,
+  pressBackspace,
   pressEscape,
+  selectAllBlocksByKeyboard,
   type,
   waitNextFrame,
 } from '../utils/actions/index.js';
@@ -40,6 +46,7 @@ import {
   assertEdgelessNonSelectedRect,
   assertEdgelessSelectedRect,
   assertRichTexts,
+  assertSelectedBound,
 } from '../utils/asserts.js';
 import { test } from '../utils/playwright.js';
 
@@ -738,4 +745,46 @@ test.describe('shape hit test', () => {
     await type(page, ' world');
     await assertEdgelessCanvasText(page, 'hello world');
   });
+});
+
+test('should create a shape when press s and click on canvas', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+  await clickView(page, [0, 0]);
+  await zoomResetByKeyboard(page);
+  await selectAllBlocksByKeyboard(page);
+  await pressBackspace(page);
+
+  await page.keyboard.press('s');
+  await assertEdgelessTool(page, 'shape');
+  await clickView(page, [100, 100]);
+  await selectAllBlocksByKeyboard(page);
+  expect(await getSelectedBoundCount(page)).toBe(1);
+  await assertSelectedBound(page, [100, 100, 100, 100]);
+});
+
+test('shape should be editable when re-enter canvas', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+  await clickView(page, [0, 0]);
+  await zoomResetByKeyboard(page);
+  await selectAllBlocksByKeyboard(page);
+  await pressBackspace(page);
+
+  await page.keyboard.press('s');
+  await dragBetweenViewCoords(page, [0, 0], [100, 100]);
+  await dblclickView(page, [50, 50]);
+  await type(page, 'hello');
+  await expect(page.locator('edgeless-shape-text-editor')).toBeAttached();
+  await assertEdgelessCanvasText(page, 'hello');
+
+  await switchEditorMode(page);
+  await switchEditorMode(page);
+
+  await dblclickView(page, [50, 50]);
+  await expect(page.locator('edgeless-shape-text-editor')).toBeAttached();
 });

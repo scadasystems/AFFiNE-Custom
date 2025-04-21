@@ -4,10 +4,7 @@ import {
   codeToolbarWidget,
 } from '@blocksuite/affine/blocks/code';
 import { ParagraphBlockConfigExtension } from '@blocksuite/affine/blocks/paragraph';
-import type {
-  Container,
-  ServiceIdentifier,
-} from '@blocksuite/affine/global/di';
+import type { Container } from '@blocksuite/affine/global/di';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import {
   FeatureFlagService,
@@ -15,11 +12,7 @@ import {
   type VirtualKeyboardProviderWithAction,
 } from '@blocksuite/affine/shared/services';
 import type { SpecBuilder } from '@blocksuite/affine/shared/utils';
-import {
-  type BlockStdScope,
-  LifeCycleWatcher,
-  LifeCycleWatcherIdentifier,
-} from '@blocksuite/affine/std';
+import { type BlockStdScope, LifeCycleWatcher } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import { SlashMenuExtension } from '@blocksuite/affine/widgets/slash-menu';
 import { toolbarWidget } from '@blocksuite/affine/widgets/toolbar';
@@ -78,11 +71,7 @@ function KeyboardToolbarExtension(framework: FrameworkProvider): ExtensionType {
     static override setup(di: Container) {
       super.setup(di);
       di.addImpl(BSVirtualKeyboardProvider, provider => {
-        return provider.get(
-          LifeCycleWatcherIdentifier(
-            this.key
-          ) as ServiceIdentifier<BSVirtualKeyboardService>
-        );
+        return provider.get(this);
       });
     }
 
@@ -103,17 +92,20 @@ function KeyboardToolbarExtension(framework: FrameworkProvider): ExtensionType {
   }
 
   if ('show' in affineVirtualKeyboardProvider) {
-    return class
+    const providerWithAction = affineVirtualKeyboardProvider;
+    class BSVirtualKeyboardServiceWithShowAndHide
       extends BSVirtualKeyboardService
       implements VirtualKeyboardProviderWithAction
     {
       show() {
-        affineVirtualKeyboardProvider.show();
+        providerWithAction.show();
       }
       hide() {
-        affineVirtualKeyboardProvider.hide();
+        providerWithAction.hide();
       }
-    };
+    }
+
+    return BSVirtualKeyboardServiceWithShowAndHide;
   }
 
   return BSVirtualKeyboardService;

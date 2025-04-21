@@ -714,6 +714,12 @@ export class CopilotContextResolver {
       .workspace(session.workspaceId)
       .allowLocal()
       .assert('Workspace.Copilot');
+    const allowEmbedding = await this.models.workspace.allowEmbedding(
+      session.workspaceId
+    );
+    if (!allowEmbedding) {
+      return [];
+    }
 
     try {
       return await session.matchWorkspaceChunks(

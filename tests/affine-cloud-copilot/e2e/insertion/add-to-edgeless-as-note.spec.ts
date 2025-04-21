@@ -1,17 +1,17 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIInsertion/AddToEdgelessAsNote', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should only show option in edgeless mode', async ({ page, utils }) => {
+  test('should only show option in edgeless mode', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.editor.focusToEditor(page);
     await utils.chatPanel.makeChat(page, 'Hello');
 
@@ -37,7 +37,7 @@ test.describe('AIInsertion/AddToEdgelessAsNote', () => {
   });
 
   test('should add to edgeless as note  in edgeless mode', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.editor.switchToEdgelessMode(page);

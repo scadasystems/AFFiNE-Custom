@@ -52,7 +52,9 @@ export class DocsSearchService extends Service {
               occur: 'should',
               queries: [
                 {
-                  type: 'all',
+                  type: 'match',
+                  field: 'content',
+                  match: query,
                 },
                 {
                   type: 'boost',

@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useLiveData, useService } from '@toeverything/infra';
-import anime, { type AnimeInstance, type AnimeParams } from 'animejs';
+import { eases, waapi, type WAAPIAnimation } from 'animejs';
 import clsx from 'clsx';
 import {
   createContext,
@@ -17,6 +17,8 @@ import {
 import { EditorSettingService } from '../../editor-setting';
 import type { PeekViewAnimation, PeekViewMode } from '../entities/peek-view';
 import * as styles from './modal-container.css';
+
+type WAAPIAnimationParams = Parameters<typeof waapi.animate>[1];
 
 const contentOptions: Dialog.DialogContentProps = {
   ['data-testid' as string]: 'peek-view-modal',
@@ -89,7 +91,7 @@ export const PeekViewModalContainer = forwardRef<
   const contentRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
-  const prevAnimeMap = useRef<Record<string, AnimeInstance | undefined>>({});
+  const prevAnimeMap = useRef<Record<string, WAAPIAnimation | undefined>>({});
   const editorSettings = useService(EditorSettingService).editorSetting;
   const fullWidthLayout = useLiveData(
     editorSettings.settings$.selector(s => s.fullWidthLayout)
@@ -98,11 +100,10 @@ export const PeekViewModalContainer = forwardRef<
   const animateControls = useCallback((animateIn = false) => {
     const controls = controlsRef.current;
     if (!controls) return;
-    anime({
-      targets: controls,
+    waapi.animate(controls, {
       opacity: animateIn ? [0, 1] : [1, 0],
       translateX: animateIn ? [-32, 0] : [0, -32],
-      easing: 'easeOutQuad',
+      ease: eases.inOutSine,
       duration: 230,
     });
   }, []);
@@ -110,9 +111,9 @@ export const PeekViewModalContainer = forwardRef<
     async (
       zoomIn?: boolean,
       paramsMap?: {
-        overlay?: AnimeParams;
-        content?: AnimeParams;
-        contentWrapper?: AnimeParams;
+        overlay?: WAAPIAnimationParams;
+        content?: WAAPIAnimationParams;
+        contentWrapper?: WAAPIAnimationParams;
       }
     ) => {
       // if target has no bounding client rect,
@@ -168,32 +169,29 @@ export const PeekViewModalContainer = forwardRef<
         prevAnimeMap.current.content?.pause();
         prevAnimeMap.current.contentWrapper?.pause();
 
-        const overlayAnime = anime({
-          targets: overlay,
+        const overlayAnime = waapi.animate(overlay, {
           opacity: zoomIn ? [0, 1] : [1, 0],
-          easing: 'easeOutQuad',
+          ease: eases.inOutSine,
           duration: 230,
           ...paramsMap?.overlay,
         });
 
         const contentAnime =
           paramsMap?.content &&
-          anime({
-            targets: content,
+          waapi.animate(content, {
             ...paramsMap.content,
           });
 
-        const contentWrapperAnime = anime({
-          targets,
+        const contentWrapperAnime = waapi.animate(targets, {
           left: [fromRect.left, toRect.left],
           top: [fromRect.top, toRect.top],
           width: [fromRect.width, toRect.width],
           height: [fromRect.height, toRect.height],
-          easing: 'easeOutQuad',
+          ease: eases.inOutSine,
           duration: 230,
           ...paramsMap?.contentWrapper,
-          complete: (ins: AnimeInstance) => {
-            paramsMap?.contentWrapper?.complete?.(ins);
+          onComplete: (ins: WAAPIAnimation) => {
+            paramsMap?.contentWrapper?.onComplete?.(ins);
             setAnimeState('idle');
             onAnimationEnd?.();
             overlay.style.pointerEvents = '';
@@ -272,7 +270,7 @@ export const PeekViewModalContainer = forwardRef<
       content: {
         opacity: [1, 0],
         duration: 180,
-        easing: 'easeOutQuad',
+        easing: 'ease',
       },
     })
       .then(() => setVtOpen(false))
@@ -292,12 +290,11 @@ export const PeekViewModalContainer = forwardRef<
             resolve();
             return;
           }
-          anime({
-            targets: [overlay, contentClip],
+          waapi.animate([overlay, contentClip], {
             opacity: animateIn ? [0, 1] : [1, 0],
-            easing: 'easeOutQuad',
+            ease: eases.inOutSine,
             duration: 230,
-            complete: () => {
+            onComplete: () => {
               if (!animateIn) setVtOpen(false);
               setAnimeState('idle');
               onAnimationEnd?.();
@@ -323,20 +320,18 @@ export const PeekViewModalContainer = forwardRef<
             return;
           }
 
-          anime({
-            targets: [overlay],
+          waapi.animate([overlay], {
             opacity: animateIn ? [0, 1] : [1, 0],
-            easing: 'easeOutQuad',
+            ease: eases.inOutSine,
             duration: 230,
           });
-          anime({
-            targets: [contentClip],
+          waapi.animate([contentClip], {
             opacity: animateIn ? [0, 1] : [1, 0],
             y: animateIn ? ['-2%', '0%'] : ['0%', '-2%'],
             scale: animateIn ? [0.96, 1] : [1, 0.96],
-            easing: 'cubicBezier(0.42, 0, 0.58, 1)',
+            ease: eases.cubicBezier(0.42, 0, 0.58, 1),
             duration: 230,
-            complete: () => {
+            onComplete: () => {
               if (!animateIn) setVtOpen(false);
               setAnimeState('idle');
               onAnimationEnd?.();

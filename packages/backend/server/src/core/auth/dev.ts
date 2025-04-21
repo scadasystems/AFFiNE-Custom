@@ -50,7 +50,11 @@ export async function createDevUsers(models: Models) {
         });
       }
       for (const feature of features) {
-        await models.userFeature.add(devUser.id, feature, name);
+        if (feature.includes('plan')) {
+          await models.userFeature.switchQuota(devUser.id, feature, name);
+        } else {
+          await models.userFeature.add(devUser.id, feature, name);
+        }
       }
       if (workspaceFeatures) {
         for (const feature of workspaceFeatures) {

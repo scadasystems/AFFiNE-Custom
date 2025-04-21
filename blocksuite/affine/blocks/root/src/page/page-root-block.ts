@@ -27,7 +27,6 @@ import { css, html } from 'lit';
 import { query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { PageRootBlockWidgetName } from '../index.js';
 import { PageKeyboardManager } from '../keyboard/keyboard-manager.js';
 import type { PageRootService } from './page-root-service.js';
 
@@ -52,8 +51,7 @@ function testClickOnBlankArea(
 
 export class PageRootBlockComponent extends BlockComponent<
   RootBlockModel,
-  PageRootService,
-  PageRootBlockWidgetName
+  PageRootService
 > {
   static override styles = css`
     editor-host:has(> affine-page-root, * > affine-page-root) {

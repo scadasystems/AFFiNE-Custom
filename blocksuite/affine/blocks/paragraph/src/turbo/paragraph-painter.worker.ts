@@ -73,10 +73,15 @@ class ParagraphLayoutPainter implements BlockLayoutPainter {
       return;
     }
 
-    if (!isParagraphLayout(layout)) return; // cast to ParagraphLayout
+    if (!isParagraphLayout(layout)) {
+      console.warn(
+        'Expected paragraph layout but received different format:',
+        layout
+      );
+      return;
+    }
 
     const renderedPositions = new Set<string>();
-
     layout.sentences.forEach(sentence => {
       const fontSize = sentence.fontSize;
       const baselineY = getBaseline(fontSize);

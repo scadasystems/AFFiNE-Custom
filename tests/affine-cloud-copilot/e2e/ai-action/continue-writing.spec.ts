@@ -1,18 +1,15 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIAction/ContinueWriting', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
   test('should support continue writing the selected content', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await page.setViewportSize({ width: 1280, height: 2000 });
@@ -26,7 +23,7 @@ test.describe('AIAction/ContinueWriting', () => {
   });
 
   test('should support continue writing the selected text block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { continueWriting } = await utils.editor.askAIWithEdgeless(
@@ -45,7 +42,7 @@ test.describe('AIAction/ContinueWriting', () => {
   });
 
   test('should support continue writing the selected note block in edgeless', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     const { continueWriting } = await utils.editor.askAIWithEdgeless(
@@ -63,7 +60,10 @@ test.describe('AIAction/ContinueWriting', () => {
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
-  test('should show chat history in chat panel', async ({ page, utils }) => {
+  test('should show chat history in chat panel', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     const { continueWriting } = await utils.editor.askAIWithText(
       page,
       'AFFiNE is a workspace with fully merged docs'

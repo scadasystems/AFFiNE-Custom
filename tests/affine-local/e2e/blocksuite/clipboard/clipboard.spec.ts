@@ -3,10 +3,13 @@ import { pasteContent } from '@affine-test/kit/utils/clipboard';
 import {
   clickEdgelessModeButton,
   clickPageModeButton,
+  getCodeBlockIds,
+  getParagraphIds,
   locateEditorContainer,
 } from '@affine-test/kit/utils/editor';
 import {
   copyByKeyboard,
+  cutByKeyboard,
   pasteByKeyboard,
   pressEnter,
 } from '@affine-test/kit/utils/keyboard';
@@ -14,7 +17,6 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   addCodeBlock,
   clickNewPageButton,
-  getBlockSuiteEditorTitle,
   type,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
@@ -82,28 +84,6 @@ async function verifyCodeBlockContent(
     index,
     expectedText
   );
-}
-
-// Helper function to get block ids
-async function getBlockIds<T extends BlockComponent>(
-  page: Page,
-  selector: string
-) {
-  const blocks = page.locator(selector);
-  const blockIds = await blocks.evaluateAll((blocks: T[]) =>
-    blocks.map(block => block.model.id)
-  );
-  return { blockIds };
-}
-
-// Helper functions using the generic getBlockIds
-async function getParagraphIds(page: Page) {
-  return getBlockIds<ParagraphBlockComponent>(page, paragraphLocator);
-}
-
-// Helper functions using the generic getBlockIds
-async function getCodeBlockIds(page: Page) {
-  return getBlockIds<CodeBlockComponent>(page, codeBlockLocator);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -195,62 +175,84 @@ test.describe('paste in multiple blocks text selection', () => {
   });
 });
 
-test('paste surface-ref block to another doc as embed-linked-doc block', async ({
-  page,
-}) => {
-  await openHomePage(page);
-  await clickNewPageButton(page, 'Clipboard Test');
-  await waitForEditorLoad(page);
-  await clickEdgelessModeButton(page);
-  const container = locateEditorContainer(page);
-  await container.click();
+test.describe('surface-ref block', () => {
+  async function setupSurfaceRefBlock(page: Page) {
+    await clickEdgelessModeButton(page);
+    const container = locateEditorContainer(page);
+    await container.click();
 
-  // add a shape
-  await page.keyboard.press('s');
-  // click to add a shape
-  await container.click({ position: { x: 100, y: 500 } });
-  await page.waitForTimeout(50);
-  // add a frame
-  await page.keyboard.press('f');
-  await page.waitForTimeout(50);
+    // add a shape
+    await page.keyboard.press('s');
+    await container.click({ position: { x: 100, y: 300 } });
+    await page.waitForTimeout(50);
 
-  // click on the frame title to trigger the change frame button toolbar
-  const frameTitle = page.locator('affine-frame-title');
-  await frameTitle.click();
-  await page.waitForTimeout(50);
+    // add a frame
+    await page.keyboard.press('f');
+    await page.waitForTimeout(50);
 
-  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    // click on the frame title to trigger the change frame button toolbar
+    const frameTitle = page.locator('affine-frame-title');
+    await frameTitle.click();
+    await page.waitForTimeout(50);
 
-  const insertIntoPageButton = toolbar.getByLabel('Insert into Page');
-  await insertIntoPageButton.click();
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    const insertIntoPageButton = toolbar.getByLabel('Insert into Page');
+    await insertIntoPageButton.click();
 
-  await clickPageModeButton(page);
-  await page.waitForTimeout(50);
+    await clickPageModeButton(page);
+    await waitForEditorLoad(page);
+    await container.click();
 
-  // copy surface-ref block
-  const surfaceRefBlock = page.locator('.affine-surface-ref');
-  await surfaceRefBlock.click();
-  await page.waitForTimeout(50);
-  await copyByKeyboard(page);
+    return { container };
+  }
 
-  // paste to another doc
-  await clickNewPageButton(page);
-  await waitForEditorLoad(page);
-  const title2 = getBlockSuiteEditorTitle(page);
-  await title2.pressSequentially('page2');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(50);
+  test('paste surface-ref block to another doc as embed-linked-doc block', async ({
+    page,
+  }) => {
+    await setupSurfaceRefBlock(page);
 
-  // paste the surface-ref block
-  await pasteByKeyboard(page);
-  await page.waitForTimeout(50);
+    // copy surface-ref block
+    const surfaceRefBlock = page.locator('affine-surface-ref');
+    await surfaceRefBlock.click();
+    await page.waitForSelector('affine-surface-ref .focused');
+    await copyByKeyboard(page);
 
-  const embedLinkedDocBlock = page.locator('affine-embed-linked-doc-block');
-  await expect(embedLinkedDocBlock).toBeVisible();
-  const embedLinkedDocBlockTitle = embedLinkedDocBlock.locator(
-    '.affine-embed-linked-doc-content-title-text'
-  );
-  await expect(embedLinkedDocBlockTitle).toHaveText('Clipboard Test');
+    // paste to another doc
+    await clickNewPageButton(page, 'page2');
+    await pressEnter(page);
+
+    // paste the surface-ref block
+    await pasteByKeyboard(page);
+    await page.waitForTimeout(50);
+
+    const embedLinkedDocBlock = page.locator('affine-embed-linked-doc-block');
+    await expect(embedLinkedDocBlock).toBeVisible();
+    const embedLinkedDocBlockTitle = embedLinkedDocBlock.locator(
+      '.affine-embed-linked-doc-content-title-text'
+    );
+    await expect(embedLinkedDocBlockTitle).toHaveText('Clipboard Test');
+  });
+
+  test('cut and paste surface-ref block to same doc should remain surface-ref block', async ({
+    page,
+  }) => {
+    const { container } = await setupSurfaceRefBlock(page);
+
+    // cut surface-ref block
+    const surfaceRefBlock = page.locator('affine-surface-ref');
+    await surfaceRefBlock.click();
+    await page.waitForSelector('affine-surface-ref .focused');
+    await cutByKeyboard(page);
+
+    // focus on the editor
+    await container.click();
+
+    // paste the surface-ref block
+    await pasteByKeyboard(page);
+    await page.waitForTimeout(50);
+    await expect(surfaceRefBlock).toHaveCount(1);
+    await expect(surfaceRefBlock).toBeVisible();
+  });
 });
 
 test.describe('paste to code block', () => {
@@ -322,5 +324,113 @@ test.describe('paste to code block', () => {
     await page.waitForTimeout(100);
 
     await verifyCodeBlockContent(page, 0, 'hello test\ntest\ntest hello');
+  });
+
+  test('should preserve indentation when pasting code with spaces into code block', async ({
+    page,
+  }) => {
+    await pressEnter(page);
+    await addCodeBlock(page);
+
+    // Sample code with proper indentation for text/plain
+    const plainTextCode = [
+      'const fibonacci = (n: number): number => {',
+      '  if (n <= 1) return n;',
+      '  return fibonacci(n - 1) + fibonacci(n - 2);',
+      '}',
+      'function generateSequence(length: number) {',
+      '  const sequence = [];',
+      '  for (let i = 0; i < length; i++) {',
+      '    sequence.push(fibonacci(i));',
+      '  }',
+      '  return sequence;',
+      '}',
+    ].join('\n');
+
+    const htmlCode =
+      '<div><span>const</span><span> </span><span>fibonacci</span><span> </span><span>=</span><span> (n</span><span>:</span><span> </span><span>number</span><span>)</span><span>:</span><span> </span><span>number</span><span> </span><span>=></span><span> {</span></div><div><span>  </span><span>if</span><span> (n </span><span><=</span><span> </span><span>1</span><span>) </span><span>return</span><span> n;</span></div><div><span>  </span><span>return</span><span> </span><span>fibonacci</span><span>(n </span><span>-</span><span> </span><span>1</span><span>) </span><span>+</span><span> </span><span>fibonacci</span><span>(n </span><span>-</span><span> </span><span>2</span><span>);</span></div><div><span>}</span></div><div><span>function</span><span> </span><span>generateSequence</span><span>(length</span><span>:</span><span> </span><span>number</span><span>) {</span></div><div><span>  </span><span>const</span><span> </span><span>sequence</span><span> </span><span>=</span><span> [];</span></div><div><span>  </span><span>for</span><span> (</span><span>let</span><span> i </span><span>=</span><span> </span><span>0</span><span>; i </span><span><</span><span> length; i</span><span>++</span><span>) {</span></div><div><span>    sequence.</span><span>push</span><span>(</span><span>fibonacci</span><span>(i));</span></div><div><span>  }</span></div><div><span>  </span><span>return</span><span> sequence;</span></div><div><span>}</span></div></div>';
+
+    await pasteContent(page, {
+      'text/plain': plainTextCode,
+      'text/html': htmlCode,
+    });
+    await page.waitForTimeout(100);
+
+    // Verify the pasted code maintains indentation
+    await verifyCodeBlockContent(page, 0, plainTextCode);
+  });
+
+  test('html tag should be treated as plain text when pasting', async ({
+    page,
+  }) => {
+    await pressEnter(page);
+    await addCodeBlock(page);
+
+    const textWithHtmlTags =
+      '<div><span>const</span><span> </span><span>fibonacci</span><span> </span><span>=</span><span> (n</span><span>:</span><span> </span><span>number</span><span>)</span><span>:</span><span> </span><span>number</span><span> </span><span>=></span><span> {</span></div><div><span>  </span><span>if</span><span> (n </span><span><=</span><span> </span><span>1</span><span>) </span><span>return</span><span> n;</span></div><div><span>  </span><span>return</span><span> </span><span>fibonacci</span><span>(n </span><span>-</span><span> </span><span>1</span><span>) </span><span>+</span><span> </span><span>fibonacci</span><span>(n </span><span>-</span><span> </span><span>2</span><span>);</span></div><div><span>}</span></div><div><span>function</span><span> </span><span>generateSequence</span><span>(length</span><span>:</span><span> </span><span>number</span><span>) {</span></div><div><span>  </span><span>const</span><span> </span><span>sequence</span><span> </span><span>=</span><span> [];</span></div><div><span>  </span><span>for</span><span> (</span><span>let</span><span> i </span><span>=</span><span> </span><span>0</span><span>; i </span><span><</span><span> length; i</span><span>++</span><span>) {</span></div><div><span>    sequence.</span><span>push</span><span>(</span><span>fibonacci</span><span>(i));</span></div><div><span>  }</span></div><div><span>  </span><span>return</span><span> sequence;</span></div><div><span>}</span></div></div>';
+
+    await pasteContent(page, { 'text/plain': textWithHtmlTags });
+    await page.waitForTimeout(100);
+
+    // Verify the pasted code maintains indentation
+    await verifyCodeBlockContent(page, 0, textWithHtmlTags);
+  });
+
+  test('should not wrap line in brackets when pasting code', async ({
+    page,
+  }) => {
+    await pressEnter(page);
+    await addCodeBlock(page);
+    const plainTextCode = [
+      '  model: anthropic("claude-3-7-sonnet-20250219"),',
+      '  prompt: How many people will live in the world in 2040?',
+      '  providerOptions: {',
+      '    anthropic: {',
+      '      thinking: { type: enabled, budgetTokens: 12000 },',
+      '    } satisfies AnthropicProviderOptions,',
+      '  },',
+    ].join('\n');
+
+    await pasteContent(page, { 'text/plain': plainTextCode });
+    await page.waitForTimeout(100);
+
+    // Verify the pasted code maintains indentation
+    await verifyCodeBlockContent(page, 0, plainTextCode);
+  });
+
+  test('should paste markdown text as plain text', async ({ page }) => {
+    await pressEnter(page);
+    await addCodeBlock(page);
+
+    const markdownText = [
+      '# Heading 1',
+      '',
+      '## Heading 2 with **bold** and *italic*',
+      '',
+      '### Lists:',
+      '- Item 1',
+      '  - Nested item with `inline code`',
+      '  - Another nested item',
+      '- Item 2 with [link](https://example.com)',
+      '',
+      '```typescript',
+      'const code = "block";',
+      'console.log(code);',
+      '```',
+      '',
+      '> This is a blockquote with **bold** text',
+      '> Multiple lines in blockquote',
+      '',
+      '| Table | Header |',
+      '|-------|--------|',
+      '| Cell 1 | Cell 2 |',
+      '$This is a inline latex$',
+    ].join('\n');
+
+    await pasteContent(page, { 'text/plain': markdownText });
+    await page.waitForTimeout(100);
+
+    // Verify the pasted code maintains indentation
+    await verifyCodeBlockContent(page, 0, markdownText);
   });
 });

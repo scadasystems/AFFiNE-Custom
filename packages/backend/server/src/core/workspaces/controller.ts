@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, Param, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
 import {
@@ -37,6 +37,7 @@ export class WorkspacesController {
     @CurrentUser() user: CurrentUser | undefined,
     @Param('id') workspaceId: string,
     @Param('name') name: string,
+    @Query('redirect') redirect: string | undefined,
     @Res() res: Response
   ) {
     await this.ac
@@ -51,7 +52,13 @@ export class WorkspacesController {
 
     if (redirectUrl) {
       // redirect to signed url
-      return res.redirect(redirectUrl);
+      if (redirect === 'manual') {
+        return res.send({
+          url: redirectUrl,
+        });
+      } else {
+        return res.redirect(redirectUrl);
+      }
     }
 
     if (!body) {

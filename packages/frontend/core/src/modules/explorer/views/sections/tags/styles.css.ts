@@ -9,3 +9,15 @@ export const draggedOverHighlight = style({
     },
   },
 });
+
+export const iconContainer = style({
+  display: 'flex',
+  position: 'relative',
+});
+
+export const createModalAnchor = style({
+  top: 20,
+  left: 'auto',
+  right: 0,
+  transform: 'translateX(6px)',
+});

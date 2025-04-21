@@ -2,11 +2,12 @@ import { type Framework } from '@toeverything/infra';
 
 import { WorkspaceServerService } from '../cloud';
 import { WorkspaceDialogService } from '../dialogs';
-import { DocsService } from '../doc';
+import { DocScope, DocsService } from '../doc';
 import { DocDisplayMetaService } from '../doc-display-meta';
 import { EditorSettingService } from '../editor-setting';
 import { JournalService } from '../journal';
 import { GuardService, MemberSearchService } from '../permissions';
+import { DocGrantedUsersService } from '../permissions/services/doc-granted-users';
 import { SearchMenuService } from '../search-menu/services';
 import { WorkspaceScope } from '../workspace';
 import { AtMenuConfigService } from './services';
@@ -14,6 +15,7 @@ import { AtMenuConfigService } from './services';
 export function configAtMenuConfigModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
+    .scope(DocScope)
     .service(AtMenuConfigService, [
       JournalService,
       DocDisplayMetaService,
@@ -24,5 +26,6 @@ export function configAtMenuConfigModule(framework: Framework) {
       WorkspaceServerService,
       MemberSearchService,
       GuardService,
+      DocGrantedUsersService,
     ]);
 }

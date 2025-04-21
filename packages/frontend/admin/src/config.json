@@ -92,10 +92,6 @@
     }
   },
   "mailer": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Whether enabled mail service."
-    },
     "SMTP.host": {
       "type": "String",
       "desc": "Host of the email server (e.g. smtp.gmail.com)",

@@ -229,7 +229,7 @@ const SharePageInner = ({
   }
 
   if (!workspace || !page || !editor) {
-    return <AppContainer fallback />;
+    return null;
   }
 
   return (

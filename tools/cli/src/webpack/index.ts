@@ -67,7 +67,7 @@ export function createHTMLTargetConfig(
     //#region basic webpack config
     name: entry['index'],
     dependencies: deps,
-    context: pkg.path.value,
+    context: ProjectRoot.value,
     experiments: {
       topLevelAwait: true,
       outputModule: false,
@@ -335,7 +335,6 @@ export function createHTMLTargetConfig(
       minimizer: [
         new TerserPlugin({
           minify: TerserPlugin.swcMinify,
-          exclude: [/plugins\/.+\/.+\.js$/, /plugins\/.+\/.+\.mjs$/],
           parallel: true,
           extractComments: true,
           terserOptions: {
@@ -406,15 +405,12 @@ export function createWorkerTargetConfig(
   pkg: Package,
   entry: string
 ): Omit<webpack.Configuration, 'name'> & { name: string } {
-  const workerName = path.basename(entry).replace(/\.([^.]+)$/, '');
-  if (!workerName.endsWith('.worker')) {
-    throw new Error('Worker name must end with `.worker.[ext]`');
-  }
+  const workerName = path.basename(entry).replace(/\.worker\.ts$/, '');
   const buildConfig = getBuildConfigFromEnv(pkg);
 
   return {
     name: entry,
-    context: pkg.path.value,
+    context: ProjectRoot.value,
     experiments: {
       topLevelAwait: true,
       outputModule: false,
@@ -424,7 +420,7 @@ export function createWorkerTargetConfig(
       [workerName]: entry,
     },
     output: {
-      filename: 'js/[name].js',
+      filename: `js/${workerName}-${buildConfig.appVersion}.worker.js`,
       path: pkg.distPath.value,
       clean: false,
       globalObject: 'globalThis',
@@ -498,35 +494,6 @@ export function createWorkerTargetConfig(
                 inlineSourcesContent: true,
               },
             },
-            {
-              test: /\.tsx$/,
-              exclude: /node_modules/,
-              loader: 'swc-loader',
-              options: {
-                // https://swc.rs/docs/configuring-swc/
-                jsc: {
-                  preserveAllComments: true,
-                  parser: {
-                    syntax: 'typescript',
-                    dynamicImport: true,
-                    topLevelAwait: false,
-                    tsx: true,
-                    decorators: true,
-                  },
-                  target: 'es2022',
-                  externalHelpers: false,
-                  transform: {
-                    react: {
-                      runtime: 'automatic',
-                    },
-                    useDefineForClassFields: false,
-                    decoratorVersion: '2022-03',
-                  },
-                },
-                sourceMaps: true,
-                inlineSourcesContent: true,
-              },
-            },
           ],
         },
       ],
@@ -541,6 +508,9 @@ export function createWorkerTargetConfig(
           {} as Record<string, string>
         )
       ),
+      new webpack.optimize.LimitChunkCountPlugin({
+        maxChunks: 1,
+      }),
       process.env.SENTRY_AUTH_TOKEN &&
         process.env.SENTRY_ORG &&
         process.env.SENTRY_PROJECT &&
@@ -558,7 +528,6 @@ export function createWorkerTargetConfig(
       minimizer: [
         new TerserPlugin({
           minify: TerserPlugin.swcMinify,
-          exclude: [/plugins\/.+\/.+\.js$/, /plugins\/.+\/.+\.mjs$/],
           parallel: true,
           extractComments: true,
           terserOptions: {
@@ -579,6 +548,9 @@ export function createWorkerTargetConfig(
       removeAvailableModules: true,
       runtimeChunk: false,
       splitChunks: false,
+    },
+    performance: {
+      hints: false,
     },
   };
 }

@@ -2,7 +2,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import test from 'ava';
-import { Queue as Bullmq } from 'bullmq';
+import { Queue as Bullmq, Worker } from 'bullmq';
 import Sinon from 'sinon';
 
 import { createTestingModule } from '../../../../__tests__/utils';
@@ -15,6 +15,7 @@ import { JobHandlerScanner } from '../scanner';
 let module: TestingModule;
 let queue: JobQueue;
 let executor: JobExecutor;
+let worker: Worker;
 let bullmq: Bullmq;
 
 declare global {
@@ -69,6 +70,9 @@ test.before(async () => {
   queue = module.get(JobQueue);
   executor = module.get(JobExecutor);
   bullmq = module.get(getQueueToken('nightly'), { strict: false });
+  // @ts-expect-error private api
+  worker = executor.workers.get('nightly')!;
+  await worker.pause();
 });
 
 test.beforeEach(async () => {
@@ -116,13 +120,6 @@ test('should remove job from queue', async t => {
 // #endregion
 
 // #region executor
-test('should start workers', async t => {
-  // @ts-expect-error private api
-  const worker = executor.workers.get('nightly')!;
-
-  t.truthy(worker);
-});
-
 test('should dispatch job handler', async t => {
   const handlers = module.get(JobHandlers);
   const spy = Sinon.spy(handlers, 'handleJob');

@@ -464,6 +464,8 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
 
   const url = page.url();
 
+  const docTitle = await page.getByTestId('title-edit-button').innerText();
+
   await clickNewPageButton(page);
   await clickEdgelessModeButton(page);
   await page.locator('affine-edgeless-root').press('@');
@@ -475,7 +477,9 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   await insertInputText(page, url);
 
   // expect the default page to be selected
-  await expect(page.locator('[cmdk-group-items] [cmdk-item]')).toHaveCount(5);
+  await expect(
+    page.locator('[cmdk-group-items] [cmdk-item][data-selected="true"]')
+  ).toContainText(docTitle);
 
   // press enter to insert the page to canvas
   await page.keyboard.press('Enter');
@@ -484,7 +488,7 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   ).toBeVisible();
   await expect(
     page.locator('.affine-embed-linked-doc-content-title')
-  ).toContainText('Write, Draw, Plan all at Once');
+  ).toContainText(docTitle);
 
   // focus on the note block
   await page.waitForTimeout(500);
@@ -514,7 +518,7 @@ test('can paste a doc link to create link reference', async ({ page }) => {
   // check the link reference
   await page.waitForTimeout(500);
   await expect(
-    page.locator('affine-reference:has-text("Write, Draw, Plan all at Once.")')
+    page.locator('affine-reference:has-text("Getting Started")')
   ).toBeVisible();
 
   // can ctrl-z to revert to normal link

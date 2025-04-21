@@ -23,7 +23,12 @@ import type {
   DocDisplayConfig,
   FileChip,
 } from '../ai-chat-chips/type';
-import { isDocChip, isFileChip } from '../ai-chat-chips/utils';
+import {
+  isCollectionChip,
+  isDocChip,
+  isFileChip,
+  isTagChip,
+} from '../ai-chat-chips/utils';
 import type { ChatMessage } from '../ai-chat-messages';
 import type { AIChatInputContext, AINetworkSearchConfig } from './type';
 
@@ -281,12 +286,9 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
         ({ input, context, host }) => {
           if (this.host === host) {
             context && this.updateContext(context);
-            const { updateComplete, send } = this;
-            updateComplete
-              .then(() => {
-                return send(input);
-              })
-              .catch(console.error);
+            setTimeout(() => {
+              this.send(input).catch(console.error);
+            }, 0);
           }
         }
       )
@@ -524,7 +526,8 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
       await this._preUpdateMessages(userInput, attachments);
 
       const sessionId = await this.createSessionId();
-      const contexts = await this._getMatchedContexts(userInput);
+      let contexts = await this._getMatchedContexts(userInput);
+      contexts = this._filterContexts(contexts);
       if (abortController.signal.aborted) {
         return;
       }
@@ -685,6 +688,42 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
     return {
       docs,
       files: Array.from(fileContexts.values()),
+    };
+  }
+
+  // TODO: remove this function after workspace embedding is ready
+  private _filterContexts(contexts: {
+    docs: BlockSuitePresets.AIDocContextOption[];
+    files: BlockSuitePresets.AIFileContextOption[];
+  }) {
+    const docIds = this.chips.reduce((acc, chip) => {
+      if (isDocChip(chip)) {
+        acc.push(chip.docId);
+      }
+      if (isTagChip(chip)) {
+        const docIds = this.docDisplayConfig.getTagPageIds(chip.tagId);
+        acc.push(...docIds);
+      }
+      if (isCollectionChip(chip)) {
+        const docIds = this.docDisplayConfig.getCollectionPageIds(
+          chip.collectionId
+        );
+        acc.push(...docIds);
+      }
+      return acc;
+    }, [] as string[]);
+
+    const fileIds = this.chips.reduce((acc, chip) => {
+      if (isFileChip(chip) && chip.blobId) {
+        acc.push(chip.blobId);
+      }
+      return acc;
+    }, [] as string[]);
+
+    const { docs, files } = contexts;
+    return {
+      docs: docs.filter(doc => docIds.includes(doc.docId)),
+      files: files.filter(file => fileIds.includes(file.blobId)),
     };
   }
 }

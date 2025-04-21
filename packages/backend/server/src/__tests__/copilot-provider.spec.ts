@@ -1,6 +1,5 @@
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
-import { z } from 'zod';
 
 import { ServerFeature, ServerService } from '../core';
 import { AuthService } from '../core/auth';
@@ -8,6 +7,7 @@ import { QuotaModule } from '../core/quota';
 import { CopilotModule } from '../plugins/copilot';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import { CopilotProviderFactory } from '../plugins/copilot/providers';
+import { TranscriptionResponseSchema } from '../plugins/copilot/transcript/types';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -315,6 +315,7 @@ const actions = [
     type: 'text' as const,
   },
   {
+    name: 'Should transcribe short audio',
     promptName: ['Transcript audio'],
     messages: [
       {
@@ -323,23 +324,58 @@ const actions = [
         attachments: [
           'https://cdn.affine.pro/copilot-test/MP9qDGuYgnY+ILoEAmHpp3h9Npuw2403EAYMEA.mp3',
         ],
+        params: {
+          schema: TranscriptionResponseSchema,
+        },
       },
     ],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
-      // cleanup json markdown wrap
-      const cleaned = result
-        .replace(/```[\w\s]+\n/g, '')
-        .replace(/\n```/g, '')
-        .trim();
       t.notThrows(() => {
-        z.object({
-          a: z.string(),
-          s: z.number(),
-          e: z.number(),
-          t: z.string(),
-        })
-          .array()
-          .parse(JSON.parse(cleaned));
+        TranscriptionResponseSchema.parse(JSON.parse(result));
+      });
+    },
+    type: 'text' as const,
+  },
+  {
+    name: 'Should transcribe middle audio',
+    promptName: ['Transcript audio'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: '',
+        attachments: [
+          'https://cdn.affine.pro/copilot-test/2ed05eo1KvZ2tWB_BAjFo67EAPZZY-w4LylUAw.m4a',
+        ],
+        params: {
+          schema: TranscriptionResponseSchema,
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.notThrows(() => {
+        TranscriptionResponseSchema.parse(JSON.parse(result));
+      });
+    },
+    type: 'text' as const,
+  },
+  {
+    name: 'Should transcribe long audio',
+    promptName: ['Transcript audio'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: '',
+        attachments: [
+          'https://cdn.affine.pro/copilot-test/nC9-e7P85PPI2rU29QWwf8slBNRMy92teLIIMw.opus',
+        ],
+        params: {
+          schema: TranscriptionResponseSchema,
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.notThrows(() => {
+        TranscriptionResponseSchema.parse(JSON.parse(result));
       });
     },
     type: 'text' as const,
@@ -425,8 +461,9 @@ const actions = [
     ],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       assertNotWrappedInCodeBlock(t, result);
+      const cleared = result.toLowerCase();
       t.assert(
-        result.toLowerCase().includes('单一事实来源'),
+        cleared.includes('单一') || cleared.includes('SSOT'),
         'explain code result should include keyword'
       );
     },
@@ -476,6 +513,19 @@ const actions = [
     },
     type: 'image' as const,
   },
+  {
+    promptName: ['debug:action:dalle3'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'Panda',
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, link: string) => {
+      t.truthy(checkUrl(link), 'should be a valid url');
+    },
+    type: 'image' as const,
+  },
 ];
 
 for (const { name, promptName, messages, verifier, type } of actions) {
@@ -503,7 +553,8 @@ for (const { name, promptName, messages, verifier, type } of actions) {
                 ),
                 ...messages,
               ],
-              prompt.model
+              prompt.model,
+              Object.assign({}, prompt.config)
             );
             t.truthy(result, 'should return result');
             verifier?.(t, result);

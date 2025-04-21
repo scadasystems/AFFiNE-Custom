@@ -256,17 +256,19 @@ export class UserSubscriptionManager extends SubscriptionManager {
     stripeSubscription,
   }: KnownStripeSubscription) {
     this.assertUserIdExists(userId);
-    this.event.emit('user.subscription.canceled', {
-      userId,
-      plan: lookupKey.plan,
-      recurring: lookupKey.recurring,
-    });
-
-    await this.db.subscription.deleteMany({
+    const result = await this.db.subscription.deleteMany({
       where: {
         stripeSubscriptionId: stripeSubscription.id,
       },
     });
+
+    if (result.count > 0) {
+      this.event.emit('user.subscription.canceled', {
+        userId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+      });
+    }
   }
 
   async cancelSubscription(subscription: Subscription) {

@@ -1,17 +1,17 @@
-import { loginUser } from '@affine-test/kit/utils/cloud';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
 test.describe('AIInsertion/SaveAsDoc', () => {
-  test.beforeEach(async ({ page, utils }) => {
-    const user = await utils.testUtils.getUser();
-    await loginUser(page, user);
+  test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should save content as a doc in page mode', async ({ page, utils }) => {
+  test('should save content as a doc in page mode', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
     await utils.chatPanel.openChatPanel(page);
     await utils.chatPanel.makeChat(page, 'Hello');
 
@@ -39,7 +39,7 @@ test.describe('AIInsertion/SaveAsDoc', () => {
   });
 
   test('should save content as a doc in edgeless mode', async ({
-    page,
+    loggedInPage: page,
     utils,
   }) => {
     await utils.editor.switchToEdgelessMode(page);

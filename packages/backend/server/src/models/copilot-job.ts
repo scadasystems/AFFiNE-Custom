@@ -9,6 +9,11 @@ import { CopilotJob } from './common/copilot';
 type CreateCopilotJobInput = Omit<CopilotJob, 'id' | 'status' | 'payload'>;
 type UpdateCopilotJobInput = Pick<CopilotJob, 'status' | 'payload'>;
 
+const FinishedStatus: Set<AiJobStatus> = new Set([
+  AiJobStatus.finished,
+  AiJobStatus.claimed,
+]);
+
 /**
  * Copilot Job Model
  */
@@ -90,6 +95,10 @@ export class CopilotJobModel extends BaseModel {
       data: {
         status: data.status || undefined,
         payload: data.payload || undefined,
+        finishedAt:
+          data.status && FinishedStatus.has(data.status)
+            ? new Date()
+            : undefined,
       },
     });
     return ret.count > 0;
