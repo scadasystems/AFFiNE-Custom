@@ -300,7 +300,7 @@ const ImportOptions = ({
           )
         )}
       </div>
-      <div className={style.importModalTip}>
+      {/* <div className={style.importModalTip}>
         {t['com.affine.import.modal.tip']()}{' '}
         <a
           className={style.link}
@@ -311,7 +311,7 @@ const ImportOptions = ({
           Discord
         </a>
         .
-      </div>
+      </div> */}
     </>
   );
 };

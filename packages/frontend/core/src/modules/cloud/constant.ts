@@ -16,7 +16,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
           // this is ok for web app, but not for desktop app
           // since we never build desktop app in selfhosted mode, so it's fine
           config: {
-            serverName: 'Affine Selfhost',
+            serverName: 'DUSTA Note Selfhost',
             features: [],
             oauthProviders: [],
             type: ServerDeploymentType.Selfhosted,
@@ -37,7 +37,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
               ? 'http://localhost:8080'
               : location.origin,
             config: {
-              serverName: 'Affine Cloud',
+              serverName: 'DUSTA Note',
               features: [
                 ServerFeature.Captcha,
                 ServerFeature.Copilot,
@@ -61,7 +61,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
               id: 'affine-cloud',
               baseUrl: 'https://app.affine.pro',
               config: {
-                serverName: 'Affine Cloud',
+                serverName: 'DUSTA Note',
                 features: [
                   ServerFeature.Captcha,
                   ServerFeature.Copilot,
@@ -85,7 +85,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                 id: 'affine-cloud',
                 baseUrl: 'https://insider.affine.pro',
                 config: {
-                  serverName: 'Affine Cloud',
+                  serverName: 'DUSTA Note',
                   features: [
                     ServerFeature.Captcha,
                     ServerFeature.Copilot,
@@ -109,7 +109,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                   id: 'affine-cloud',
                   baseUrl: 'https://insider.affine.pro',
                   config: {
-                    serverName: 'Affine Cloud',
+                    serverName: 'DUSTA Note',
                     features: [
                       ServerFeature.Captcha,
                       ServerFeature.Copilot,
@@ -133,7 +133,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                     id: 'affine-cloud',
                     baseUrl: 'https://affine.fail',
                     config: {
-                      serverName: 'Affine Cloud',
+                      serverName: 'DUSTA Note',
                       features: [
                         ServerFeature.Captcha,
                         ServerFeature.Copilot,

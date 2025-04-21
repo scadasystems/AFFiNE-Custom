@@ -2,7 +2,6 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { useEnableAI } from '../../hooks/affine/use-enable-ai';
 import { AIOnboardingEdgeless } from './edgeless.dialog';
-import { AIOnboardingLocal } from './local.dialog';
 import { AIOnboardingType } from './type';
 
 const useDismiss = (key: AIOnboardingType) => {
@@ -26,12 +25,13 @@ const useDismiss = (key: AIOnboardingType) => {
 };
 
 export const WorkspaceAIOnboarding = () => {
-  const [dismissLocal] = useDismiss(AIOnboardingType.LOCAL);
-  const enableAI = useEnableAI();
+  // const [dismissLocal] = useDismiss(AIOnboardingType.LOCAL);
+  // const enableAI = useEnableAI();
 
   return (
     <Suspense>
-      {!enableAI || dismissLocal ? null : <AIOnboardingLocal />}
+      {/* {!enableAI || dismissLocal ? null : <AIOnboardingLocal />} */}
+      {null}
     </Suspense>
   );
 };

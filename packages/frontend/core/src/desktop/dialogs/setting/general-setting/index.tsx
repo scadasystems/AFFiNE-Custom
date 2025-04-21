@@ -6,7 +6,6 @@ import {
   AppearanceIcon,
   ExperimentIcon,
   FolderIcon,
-  InformationIcon,
   KeyboardIcon,
   MeetingIcon,
   NotificationIcon,
@@ -23,7 +22,6 @@ import { BackupSettingPanel } from './backup';
 import { BillingSettings } from './billing';
 import { EditorSettings } from './editor';
 import { ExperimentalFeatures } from './experimental-features';
-import { PaymentIcon, UpgradeIcon } from './icons';
 import { MeetingsSettings } from './meetings';
 import { NotificationSettings } from './notifications';
 import { AFFiNEPricingPlans } from './plans';
@@ -33,18 +31,17 @@ export type GeneralSettingList = SettingSidebarItem[];
 
 export const useGeneralSettingList = (): GeneralSettingList => {
   const t = useI18n();
-  const { authService, serverService, userFeatureService, featureFlagService } =
-    useServices({
-      AuthService,
-      ServerService,
-      UserFeatureService,
-      FeatureFlagService,
-    });
+  const { authService, userFeatureService, featureFlagService } = useServices({
+    AuthService,
+    ServerService,
+    UserFeatureService,
+    FeatureFlagService,
+  });
   const status = useLiveData(authService.session.status$);
   const loggedIn = status === 'authenticated';
-  const hasPaymentFeature = useLiveData(
-    serverService.server.features$.map(f => f?.payment)
-  );
+  // const hasPaymentFeature = useLiveData(
+  //   serverService.server.features$.map(f => f?.payment)
+  // );
   const enableEditorSettings = useLiveData(
     featureFlagService.flags.enable_editor_settings.$
   );
@@ -97,22 +94,22 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     });
   }
 
-  if (hasPaymentFeature) {
-    settings.splice(4, 0, {
-      key: 'plans',
-      title: t['com.affine.payment.title'](),
-      icon: <UpgradeIcon />,
-      testId: 'plans-panel-trigger',
-    });
-    if (loggedIn) {
-      settings.splice(4, 0, {
-        key: 'billing',
-        title: t['com.affine.payment.billing-setting.title'](),
-        icon: <PaymentIcon />,
-        testId: 'billing-panel-trigger',
-      });
-    }
-  }
+  // if (hasPaymentFeature) {
+  //   settings.splice(4, 0, {
+  //     key: 'plans',
+  //     title: t['com.affine.payment.title'](),
+  //     icon: <UpgradeIcon />,
+  //     testId: 'plans-panel-trigger',
+  //   });
+  //   if (loggedIn) {
+  //     settings.splice(4, 0, {
+  //       key: 'billing',
+  //       title: t['com.affine.payment.billing-setting.title'](),
+  //       icon: <PaymentIcon />,
+  //       testId: 'billing-panel-trigger',
+  //     });
+  //   }
+  // }
 
   if (BUILD_CONFIG.isElectron) {
     settings.push({
@@ -129,13 +126,13 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       title: t['com.affine.settings.workspace.experimental-features'](),
       icon: <ExperimentIcon />,
       testId: 'experimental-features-trigger',
-    },
-    {
-      key: 'about',
-      title: t['com.affine.aboutAFFiNE.title'](),
-      icon: <InformationIcon />,
-      testId: 'about-panel-trigger',
     }
+    // {
+    //   key: 'about',
+    //   title: t['com.affine.aboutAFFiNE.title'](),
+    //   icon: <InformationIcon />,
+    //   testId: 'about-panel-trigger',
+    // }
   );
 
   return settings;

@@ -6,7 +6,6 @@ import {
   AuthHeader,
   AuthInput,
 } from '@affine/component/auth-components';
-import { OAuth } from '@affine/core/components/affine/auth/oauth';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
@@ -40,7 +39,6 @@ function validateEmail(email: string) {
 }
 
 export const SignInStep = ({
-  state,
   changeState,
   onSkip,
   onAuthenticated,
@@ -138,7 +136,7 @@ export const SignInStep = ({
       />
 
       <AuthContent>
-        <OAuth redirectUrl={state.redirectUrl} />
+        {/* <OAuth redirectUrl={state.redirectUrl} /> */}
 
         <AuthInput
           className={style.authInput}
@@ -169,11 +167,26 @@ export const SignInStep = ({
         {!isSelfhosted && (
           <>
             <div className={style.authMessage}>
-              {/*prettier-ignore*/}
               <Trans i18nKey="com.affine.auth.sign.message">
-                By clicking &quot;Continue with Google/Email&quot; above, you acknowledge that
-                you agree to AFFiNE&apos;s <a href="https://affine.pro/terms" target="_blank" rel="noreferrer">Terms of Conditions</a> and <a href="https://affine.pro/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
-            </Trans>
+                By clicking &quot;Continue with Google/Email&quot; above, you
+                acknowledge that you agree to DUSTA Note&apos;s{' '}
+                <a
+                  href="https://dusta.dev/terms"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Terms of Conditions
+                </a>{' '}
+                and{' '}
+                <a
+                  href="https://dusta.dev/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Privacy Policy
+                </a>
+                .
+              </Trans>
             </div>
             <div className={style.skipDivider}>
               <div className={style.skipDividerLine} />

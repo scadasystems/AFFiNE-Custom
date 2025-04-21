@@ -9,7 +9,6 @@ import {
   SidebarContainer,
   SidebarScrollableContainer,
 } from '@affine/core/modules/app-sidebar/views';
-import { ExternalMenuLinkItem } from '@affine/core/modules/app-sidebar/views/menu-item/external-menu-link-item';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import {
@@ -25,12 +24,7 @@ import type { Workspace } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
-import {
-  AllDocsIcon,
-  ImportIcon,
-  JournalIcon,
-  SettingsIcon,
-} from '@blocksuite/icons/rc';
+import { AllDocsIcon, ImportIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { memo, useCallback } from 'react';
@@ -199,11 +193,11 @@ export const RootAppSidebar = memo((): ReactElement => {
             <span data-testid="import-modal-trigger">{t['Import']()}</span>
           </MenuItem>
           <TemplateDocEntrance />
-          <ExternalMenuLinkItem
+          {/* <ExternalMenuLinkItem
             href="https://affine.pro/blog?tag=Release+Note"
             icon={<JournalIcon />}
             label={t['com.affine.app-sidebar.learn-more']()}
-          />
+          /> */}
         </CollapsibleSection>
       </SidebarScrollableContainer>
       <SidebarContainer className={bottomContainer}>
